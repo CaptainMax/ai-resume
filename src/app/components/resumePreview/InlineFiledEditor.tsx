@@ -7,10 +7,12 @@ interface Props {
   sectionId: string;
   fieldId: string;
   value: string;
+  isName?: boolean; 
 }
 
-export default function InlineFieldEditor({ sectionId, fieldId, value }: Props) {
+export default function InlineFieldEditor({ sectionId, fieldId, value, isName }: Props) {
   const updateFieldValue = useResumeStore((s) => s.updateFieldValue);
+  const updateFieldName = useResumeStore((s) => s.updateFieldName);
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value);
   const prev = useRef(value);
@@ -24,7 +26,11 @@ export default function InlineFieldEditor({ sectionId, fieldId, value }: Props) 
 
   const save = () => {
     if (val !== value) {
-      updateFieldValue(sectionId, fieldId, val);
+      if (isName) {
+        updateFieldName(sectionId, fieldId, val); 
+      } else {
+        updateFieldValue(sectionId, fieldId, val); 
+      }
     }
     setEditing(false);
   };

@@ -4,6 +4,10 @@ import { useResumeStore } from "@/app/store/useResumeStore";
 import PointItem from "./PointItem";
 import { ResumePoint } from "@/app/store/types";
 
+import { fieldKey } from "@/app/lib/dnd";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 type FieldItemProps = {
   sid: string;
   fid: string;
@@ -13,69 +17,74 @@ type FieldItemProps = {
 };
 
 export default function FieldItem({ sid, fid, name, value, points }: FieldItemProps) {
+
+  //拖拽
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: fieldKey(sid, fid),
+  });
+
+  const style = { transform: CSS.Transform.toString(transform), transition };
+
   const { addPoint, removeField, setSelectedField, setSelectedPoint } = useResumeStore();
 
   return (
-    <li
-      className="border rounded p-2 bg-white shadow-sm text-sm cursor-pointer"
-      data-id={`field:${sid}:${fid}`}
-      onClick={(e) => {
-        e.stopPropagation();
-        setSelectedField({ sectionId: sid, fieldId: fid });
-        setSelectedPoint(null); // 清空 point 选中
-      }}
-    >
+      <li
+        ref={setNodeRef}
+        style={style}
+        className="border rounded p-2 bg-white shadow-sm text-sm cursor-pointer"
+        data-id={`field:${sid}:${fid}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedField({ sectionId: sid, fieldId: fid });
+          setSelectedPoint(null); // 清空 point 选中
+        }}
+      >
       {/* 标题 + 操作按钮 */}
-  <div className="flex items-center justify-between font-medium">
-  {value && <span className="block text-sm text-gray-600">{value}</span>}
-  <div className="space-x-2">
-    {/* + Point 按钮 */}
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        addPoint(sid, fid, {
-          id: crypto.randomUUID().slice(0, 8),
-          content: "New point",
-        });
-      }}
-      className="text-xs px-2 py-0.5 border rounded hover:bg-gray-50"
-    >
-      + Point
-    </button>
-
-    {/* 删除 Field 按钮 */}
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        removeField(sid, fid);
-      }}
-      className="text-xs px-2 py-0.5 border rounded text-red-600 hover:bg-red-50"
-    >
-      ✕
-    </button>
-  </div>
-  </div>
-
-{/* 单值字段 (只展示，不要 name 重复) */}
-
-
-{/* 点状条目 */}
-{points && points.length > 0 && (
-  <ul className="mt-1 space-y-1">
-    {points.map((p) => (
-      <PointItem
-        key={p.id}
-        sid={sid}
-        fid={fid}
-        pid={p.id}
-        content={p.content}
+      <div className="flex items-center justify-between font-medium">
+      <input
+        className="text-sm text-gray-800 border-b border-dashed focus:outline-none focus:border-blue-400"
+        value={name || ""}
+        onChange={(e) => {
+          e.stopPropagation();
+          useResumeStore
+            .getState()
+            .updateFieldName(sid, fid, e.target.value);
+        }}
       />
-    ))}
-  </ul>
-)}
+      <div className="space-x-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            addPoint(sid, fid, {
+              id: crypto.randomUUID().slice(0, 8),
+              content: "New point",
+            });
+          }}
+          className="text-xs px-2 py-0.5 border rounded hover:bg-gray-50"
+        >
+          + Point
+        </button>
 
-      {/* 展示 Field value（不可直接编辑） */}
-      {value && <div className="mt-1 text-gray-600">{value}</div>}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            removeField(sid, fid);
+          }}
+          className="text-xs px-2 py-0.5 border rounded text-red-600 hover:bg-red-50"
+        >
+          ✕
+        </button>
+        {/* ✅ 拖动手柄（独立控制） */}
+        <span
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing select-none text-gray-400 hover:text-gray-600"
+            title="拖动以排序"
+          >
+            ⋮⋮
+        </span>
+      </div>
+    </div>
 
       {/* 点状条目 */}
       {points && points.length > 0 && (

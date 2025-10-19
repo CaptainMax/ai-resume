@@ -34,6 +34,7 @@ export const useFieldActions = () =>
     addField: s.addField,
     removeField: s.removeField,
     updateFieldValue: s.updateFieldValue,
+    reorderFields: s.reorderFields,
   }));
 
 export const usePointActions = () =>
@@ -41,6 +42,7 @@ export const usePointActions = () =>
     addPoint: s.addPoint,
     removePoint: s.removePoint,
     updatePoint: s.updatePoint,
+    reorderPoints: s.reorderPoints,
   }));
 
 export const useUiActions = () =>

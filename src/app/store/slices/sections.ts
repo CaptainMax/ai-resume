@@ -78,6 +78,21 @@ export const createSectionsSlice: SliceCreator<SectionsSlice> = (set, get) => ({
       ),
     })),
 
+    // ✅ 【新增】Field 拖动排序
+    reorderFields: (sectionId: string, oldIndex: number, newIndex: number) =>
+        set((state) => ({
+        sections: state.sections.map((s) => {
+            if (s.id !== sectionId) return s;
+            const fields = [...(s.fields ?? [])];
+            const [moved] = fields.splice(oldIndex, 1);
+            fields.splice(newIndex, 0, moved);
+            return { ...s, fields };
+        }),
+    })),
+  
+
+
+
   // ---------- Point 操作 ----------
   addPoint: (sectionId: string, fieldId: string, point: ResumePoint) =>
     set((state) => ({
@@ -120,6 +135,31 @@ export const createSectionsSlice: SliceCreator<SectionsSlice> = (set, get) => ({
           : s
       ),
     })),
+  // ✅ Point 拖拽排序
+reorderPoints: (
+  sectionId: string,
+  fieldId: string,
+  fromIndex: number,
+  toIndex: number
+) =>
+  set((state) => {
+    const sections = [...state.sections];
+    const sectionIndex = sections.findIndex((s) => s.id === sectionId);
+    if (sectionIndex === -1) return {};
+
+    const section = sections[sectionIndex];
+    const fieldIndex = section.fields.findIndex((f) => f.id === fieldId);
+    if (fieldIndex === -1) return {};
+
+    const points = [...(section.fields[fieldIndex].points ?? [])];
+    const [moved] = points.splice(fromIndex, 1);
+    points.splice(toIndex, 0, moved);
+    section.fields[fieldIndex].points = points;
+
+    return { sections };
+  }),
+
+
 
   removePoint: (sectionId: string, fieldId: string, pointId: string) =>
     set((state) => ({

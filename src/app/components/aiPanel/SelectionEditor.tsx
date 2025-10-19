@@ -10,6 +10,7 @@ export default function SelectionEditor() {
     selectedPoint,
     updateSectionTitle,
     updateFieldValue,
+    updateFieldName,
     updatePoint,
     removePoint,   
   } = useResumeStore();
@@ -45,28 +46,23 @@ export default function SelectionEditor() {
   }
 
   // ✅ Field 编辑
-// Field 编辑
-if (selectedField) {
+  if (selectedField) {
     const { sectionId, fieldId } = selectedField;
     const section = sections.find((s) => s.id === sectionId);
     const field = section?.fields.find((f) => f.id === fieldId);
     if (!field) return null;
-  
+
     return (
       <div>
         <div className="text-sm font-medium mb-1">编辑 Field</div>
-        {/* 编辑 Field 名称 */}
-        {/* <input
-          className="w-full border rounded px-2 py-1 text-sm mb-2"
-          value={field.name}
-          onChange={(e) => updateFieldValue(sectionId, fieldId, e.target.value)}
-        /> */}
-        {/* 编辑 Field 值 */}
+
+        {/* Field 名称 */}
+        <label className="text-xs text-gray-500">字段名称（name）</label>
         <input
-          className="w-full border rounded px-2 py-1 text-sm"
-          value={field.value || ""}
-          placeholder="请输入字段内容"
-          onChange={(e) => updateFieldValue(sectionId, fieldId, e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm mb-2"
+          value={field.name ?? ""}
+          placeholder="请输入字段名称"
+          onChange={(e) => updateFieldName(sectionId, fieldId, e.target.value)}
         />
       </div>
     );
@@ -74,32 +70,32 @@ if (selectedField) {
   
   
   // Point 编辑（加删除按钮）
-  if (selectedPoint) {
-    const { sectionId, fieldId, pointId } = selectedPoint;
-    const section = sections.find((s) => s.id === sectionId);
-    const field = section?.fields.find((f) => f.id === fieldId);
-    const point = field?.points?.find((p) => p.id === pointId);
-    if (!point) return null;
+//   if (selectedPoint) {
+//     const { sectionId, fieldId, pointId } = selectedPoint;
+//     const section = sections.find((s) => s.id === sectionId);
+//     const field = section?.fields.find((f) => f.id === fieldId);
+//     const point = field?.points?.find((p) => p.id === pointId);
+//     if (!point) return null;
   
-    return (
-      <div>
-        <div className="text-sm font-medium mb-1">编辑 Point</div>
-        <input
-          className="w-full border rounded px-2 py-1 text-sm mb-2"
-          value={point.content}
-          onChange={(e) =>
-            updatePoint(sectionId, fieldId, pointId, e.target.value)
-          }
-        />
-        <button
-          onClick={() => removePoint(sectionId, fieldId, pointId)}
-          className="text-xs px-2 py-1 border rounded text-red-600 hover:bg-red-50"
-        >
-          删除 Point
-        </button>
-      </div>
-    );
-  }
+//     return (
+//       <div>
+//         <div className="text-sm font-medium mb-1">编辑 Point</div>
+//         <input
+//           className="w-full border rounded px-2 py-1 text-sm mb-2"
+//           value={point.content}
+//           onChange={(e) =>
+//             updatePoint(sectionId, fieldId, pointId, e.target.value)
+//           }
+//         />
+//         <button
+//           onClick={() => removePoint(sectionId, fieldId, pointId)}
+//           className="text-xs px-2 py-1 border rounded text-red-600 hover:bg-red-50"
+//         >
+//           删除 Point
+//         </button>
+//       </div>
+//     );
+//   }
   
   // ✅ Section 编辑
   if (selectedId) {

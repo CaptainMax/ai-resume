@@ -40,10 +40,18 @@ export interface SectionsSlice {
   updateFieldValue: (sectionId: string, fieldId: string, value: string) => void;
   updateFieldName: (sectionId: string, fieldId: string, name: string) => void;
   removeField: (sectionId: string, fieldId: string) => void;
+  reorderFields: (sectionId: string, oldIndex: number, newIndex: number) => void;
+
 
   addPoint: (sectionId: string, fieldId: string, point: ResumePoint) => void;
   updatePoint: (sectionId: string, fieldId: string, pointId: string, content: string) => void;
   removePoint: (sectionId: string, fieldId: string, pointId: string) => void;
+  reorderPoints: (
+    sectionId: string,
+    fieldId: string,
+    fromIndex: number,
+    toIndex: number
+  ) => void;
 }
 
 /** UI slice */

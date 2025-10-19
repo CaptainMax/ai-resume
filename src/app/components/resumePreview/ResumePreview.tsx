@@ -69,13 +69,38 @@ export default function ResumePreview() {
                     {(s.fields ?? []).map((f) => (
                       <div key={f.id} className="pl-2">
                         {/* 单值字段 */}
-                        {f.value !== undefined && (
+                        {/* {f.value !== undefined && (
                           <InlineFieldEditor
                             sectionId={s.id}
                             fieldId={f.id}
                             value={f.value}
+                            isName={true}
                           />
+                        )} */}
+                        {/* 渲染字段名称 */}
+                        {f.name && (
+                          <div className="font-medium text-gray-800">
+                            <InlineFieldEditor
+                              sectionId={s.id}
+                              fieldId={f.id}
+                              value={f.name}
+                              isName={true} // ✅ 编辑 name，而不是 value
+                            />
+                          </div>
                         )}
+
+                        {/* 渲染字段内容（value） */}
+                        {f.value && (
+                          <div className="text-gray-700">
+                            <InlineFieldEditor
+                              sectionId={s.id}
+                              fieldId={f.id}
+                              value={f.value}
+                              isName={false} // ✅ 编辑 value
+                            />
+                          </div>
+                        )}
+
                         {/* 点状字段 */}
                         {f.points && f.points.length > 0 && (
                           <ul className="list-disc pl-5 text-gray-700 space-y-1">
