@@ -4,7 +4,7 @@
 import { useResumeStore } from "@/app/store/useResumeStore";
 
 export function useStructuredActions() {
-  const { sections, addField, addPoint, setLastAddedFieldId, setLastAddedPointId } = useResumeStore();
+  const { sections, addField, addPoint, setLastAddedFieldId, setLastAddedPointId, addAiModifiedPoint } = useResumeStore();
 
   const handleStructuredAction = async (action: string, data: any) => {
     console.log("🔧 执行结构化操作:", action, data);
@@ -14,7 +14,7 @@ export function useStructuredActions() {
       duration: data.duration 
     });
     
-    if (action === 'add_education') {
+    if (action === 'add_education' || action === 'add_field') {
       // 找到Education section
       const educationSection = sections.find(s => 
         s.title.toLowerCase().includes('education') || 
@@ -25,8 +25,11 @@ export function useStructuredActions() {
         // 创建新的教育经历field - 使用AI提供的内容
         const newField = {
           id: `education-${Date.now()}`,
-          name: `${data.degree} - ${data.school}`,
-          points: [
+          name: data.fieldName || `${data.degree || 'Degree'} - ${data.school || 'School'}`,
+          points: data.points ? data.points.map((point: string, index: number) => ({
+            id: `point-${Date.now()}-${index}`,
+            content: point
+          })) : [
             {
               id: `point-${Date.now()}-1`,
               content: data.school ? `School: ${data.school}` : data.schoolLabel || "School"
@@ -105,6 +108,7 @@ export function useStructuredActions() {
         
         addPoint(sectionId, fieldId, newPoint);
         setLastAddedPointId(newPoint.id); // 记录最后添加的point ID
+        addAiModifiedPoint(newPoint.id); // 标记为AI修改的内容
         console.log("✅ 已在field中添加新point:", newPoint);
       } else {
         console.error("❌ 未找到对应的section或field");

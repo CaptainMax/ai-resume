@@ -41,13 +41,18 @@ const PreviewCard = forwardRef<HTMLDivElement, Props>(function PreviewCard(
       ref={combinedRef}
       style={style}
       {...attributes}
-      {...listeners}
-      className={`p-4 border rounded bg-white shadow-sm cursor-move transition
+      className={`p-3 border rounded bg-white shadow-sm transition
                   ${highlighted ? "ring-2 ring-blue-500 shadow-md" : ""}`}
       aria-label={`Section ${title}`}
     >
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold">{title}</h3>
+      <div className="flex items-center justify-between mb-1">
+        <div 
+          {...listeners}
+          className="flex items-center gap-2 cursor-move"
+        >
+          <h3 className="font-semibold">{title}</h3>
+          <span className="text-gray-400 text-xs">⋮⋮</span>
+        </div>
         <button
           onClick={(e) => {
             e.stopPropagation();

@@ -108,7 +108,8 @@ export default function SectionList() {
     <aside className="w-1/5 bg-gray-100 border-r p-4 overflow-y-auto">
       <div className="flex items-center justify-between mb-2">
         <h2 className="font-bold">分区列表</h2>
-        <div className="space-x-1">
+        {/* 隐藏折叠/展开按钮 */}
+        {/* <div className="space-x-1">
           <button
             className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
             onClick={() => setAllCollapsed(true)}
@@ -133,7 +134,7 @@ export default function SectionList() {
           >
             展开Field
           </button>
-        </div>
+        </div> */}
       </div>
 
       <AddSectionForm />

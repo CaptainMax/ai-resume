@@ -50,13 +50,13 @@ export default function ResumePreview() {
   };
 
   return (
-    <main className="flex-1 p-6 overflow-y-auto bg-gray-50">
-      <h1 className="text-2xl font-bold mb-6">简历预览</h1>
+    <main className="h-full p-4 overflow-y-auto bg-gray-50">
+      <h1 className="text-2xl font-bold mb-4">简历预览</h1>
 
       {mounted ? (
         <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={items} strategy={verticalListSortingStrategy}>
-            <div className="space-y-4">
+            <div className="space-y-3">
             {sections.map((s, i) => (
               <PreviewCard
                 key={s.id || `${s.title}-${i}`}
@@ -65,7 +65,7 @@ export default function ResumePreview() {
                 highlighted={flashSection === s.id}
                 ref={setSectionRef(s.id || `${s.title}-${i}`)}
               >
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {(s.fields ?? []).map((f, i) => (
                     <div key={f.id || `${s.id}-field-${i}`} className="pl-2">
                       {/* 渲染字段名称 */}

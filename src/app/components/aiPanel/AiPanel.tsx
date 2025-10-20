@@ -44,14 +44,18 @@ export default function AiPanel() {
         <SelectionEditor />
       </div>
 
-      {/* AI 聊天区域 */}
-      <div className="flex-1 flex flex-col border-t">
+      {/* AI 聊天消息区域 */}
+      <div className="flex-1 overflow-y-auto">
         <ChatMessages
           messages={messages}
           showUndoPrompt={showUndoPrompt}
           onConfirmKeep={onConfirmKeep}
           onUndoLastAction={onUndoLastAction}
         />
+      </div>
+
+      {/* AI 输入框 - 固定在底部 */}
+      <div className="flex-shrink-0 border-t">
         <ChatInput onSend={onSend} isLoading={isLoading} />
       </div>
     </div>

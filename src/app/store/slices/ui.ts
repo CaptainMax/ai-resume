@@ -54,6 +54,9 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
             selectedPoint: null,
             lastAddedFieldId: null,
             lastAddedPointId: null,
+            lastModifiedPoint: null,
+            aiModifiedPoints: new Set<string>(),
+            aiOriginalContents: {},
           }),
 
   lastAddedFieldId: null,
@@ -64,5 +67,32 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
 
   lastAddedPointId: null,
   setLastAddedPointId: (id) => set({ lastAddedPointId: id }),
+  
+  // AI修改高亮状态
+  aiModifiedPoints: new Set<string>(),
+  addAiModifiedPoint: (pointId) => 
+    set((state) => ({
+      aiModifiedPoints: new Set([...state.aiModifiedPoints, pointId])
+    })),
+  removeAiModifiedPoint: (pointId) =>
+    set((state) => {
+      const newSet = new Set(state.aiModifiedPoints);
+      newSet.delete(pointId);
+      return { aiModifiedPoints: newSet };
+    }),
+  clearAiModifiedPoints: () => set({ aiModifiedPoints: new Set<string>() }),
+  
+  // AI修改的原始内容
+  aiOriginalContents: {},
+  setAiOriginalContent: (pointId, originalContent) =>
+    set((state) => ({
+      aiOriginalContents: { ...state.aiOriginalContents, [pointId]: originalContent }
+    })),
+  removeAiOriginalContent: (pointId) =>
+    set((state) => {
+      const newContents = { ...state.aiOriginalContents };
+      delete newContents[pointId];
+      return { aiOriginalContents: newContents };
+    }),
     }
 );

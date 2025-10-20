@@ -93,7 +93,28 @@ export function useAiChat() {
             ...m,
             { role: "assistant", content: message },
           ]);
-        } else {
+        } else if (data.response) {
+          // 检查response中是否包含JSON action
+          try {
+            const jsonMatch = data.response.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const jsonData = JSON.parse(jsonMatch[0]);
+              if (jsonData.action && jsonData.action.type && jsonData.action.data) {
+                await handleStructuredAction(jsonData.action.type, jsonData.action.data);
+                setShowUndoPrompt(true);
+                
+                const message = "✅ AI已根据您的指令进行了修改。请确认是否保留。";
+                setMessages((m) => [
+                  ...m,
+                  { role: "assistant", content: message },
+                ]);
+                return;
+              }
+            }
+          } catch (e) {
+            // JSON解析失败，继续正常处理
+          }
+          
           setMessages((m) => [
             ...m,
             { role: "assistant", content: data.response },
@@ -108,6 +129,7 @@ export function useAiChat() {
           
           if (needsConfirmation) {
             setShowUndoPrompt(true);
+            console.log("✅ 重写完成，显示确认对话框");
           }
         }
       } else {

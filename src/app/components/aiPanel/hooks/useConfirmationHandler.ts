@@ -16,8 +16,10 @@ export function useConfirmationHandler() {
     lastModifiedPoint, 
     setLastModifiedPoint, 
     removeField, 
-    removePoint, 
-    updatePoint 
+    removePoint,
+    updatePoint,
+    removeAiModifiedPoint,
+    removeAiOriginalContent
   } = useResumeStore();
   
   const { shouldUseEnglish } = useLanguageDetection();
@@ -84,6 +86,8 @@ export function useConfirmationHandler() {
 
       if (sectionIdToRemoveFrom && fieldIdToRemoveFrom) {
         removePoint(sectionIdToRemoveFrom, fieldIdToRemoveFrom, lastAddedPointId);
+        removeAiModifiedPoint(lastAddedPointId); // 清除AI修改标记
+        removeAiOriginalContent(lastAddedPointId); // 清除原始内容
         const message = useEnglish
           ? "↩️ AI-generated point has been removed."
           : "↩️ 已撤销AI生成的point。";
@@ -98,6 +102,8 @@ export function useConfirmationHandler() {
     if (lastModifiedPoint) {
       const { sectionId, fieldId, pointId, originalContent } = lastModifiedPoint;
       updatePoint(sectionId, fieldId, pointId, originalContent);
+      removeAiModifiedPoint(pointId); // 清除AI修改标记
+      removeAiOriginalContent(pointId); // 清除原始内容
       const message = useEnglish
         ? "↩️ AI-generated changes have been undone."
         : "↩️ 已撤销AI生成的修改。";

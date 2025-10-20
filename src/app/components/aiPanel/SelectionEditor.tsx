@@ -12,7 +12,10 @@ export default function SelectionEditor() {
     updateFieldValue,
     updateFieldName,
     updatePoint,
-    removePoint,   
+    removePoint,
+    lastModifiedPoint,
+    aiModifiedPoints,
+    aiOriginalContents,
   } = useResumeStore();
 
   // 没选中任何内容
@@ -28,16 +31,36 @@ export default function SelectionEditor() {
     const point = field?.points?.find((p) => p.id === pointId);
     if (!point) return null;
 
-    console.log("正在编辑 Point:", pointId, point);
+    // 检查是否是AI修改的内容
+    const isAiModified = aiModifiedPoints.has(pointId);
+    
+    // 获取原始内容（如果有的话）
+    const originalContent = aiOriginalContents[pointId] || null;
 
     return (
       <div className="space-y-3">
         <div className="text-sm font-medium text-gray-700">编辑 Point</div>
         
-        {/* 合并的编辑区域 */}
-        <div>
+        {/* 显示修改前的内容（如果有的话） */}
+        {originalContent && originalContent !== point.content && (
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500 font-medium">修改前：</div>
+            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-800 line-through">
+              {originalContent}
+            </div>
+          </div>
+        )}
+        
+        {/* 显示修改后的内容 */}
+        <div className="space-y-2">
+          <div className="text-xs text-gray-500 font-medium">
+            修改后：
+            {isAiModified && <span className="ml-2 text-yellow-600">✨ AI修改</span>}
+          </div>
           <textarea
-            className="w-full border rounded-lg px-3 py-3 text-sm min-h-[150px] resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            className={`w-full border rounded-lg px-3 py-3 text-sm min-h-[150px] resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent ${
+              isAiModified ? 'bg-yellow-50 border-yellow-300' : ''
+            }`}
             value={point.content ?? ""}
             placeholder="请输入 point 内容..."
             onChange={(e) =>
@@ -118,8 +141,6 @@ export default function SelectionEditor() {
   if (selectedId) {
     const section = sections.find((s) => s.id === selectedId);
     if (!section) return null;
-
-    console.log("正在编辑 Section:", selectedId, section);
 
     return (
       <div className="space-y-3">

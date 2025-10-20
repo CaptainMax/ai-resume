@@ -13,6 +13,9 @@ interface Props {
 export default function InlineFieldEditor({ sectionId, fieldId, value, isName }: Props) {
   const updateFieldValue = useResumeStore((s) => s.updateFieldValue);
   const updateFieldName = useResumeStore((s) => s.updateFieldName);
+  const setSelectedField = useResumeStore((s) => s.setSelectedField);
+  const setLastModifiedPoint = useResumeStore((s) => s.setLastModifiedPoint);
+  const setShowUndoPrompt = useResumeStore((s) => s.setShowUndoPrompt);
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value);
   const prev = useRef(value);
@@ -26,11 +29,23 @@ export default function InlineFieldEditor({ sectionId, fieldId, value, isName }:
 
   const save = () => {
     if (val !== value) {
+      // 保存原始内容用于undo
+      setLastModifiedPoint({
+        sectionId,
+        fieldId,
+        pointId: fieldId, // 使用fieldId作为pointId
+        originalContent: value
+      });
+      
+      // 应用修改
       if (isName) {
         updateFieldName(sectionId, fieldId, val); 
       } else {
         updateFieldValue(sectionId, fieldId, val); 
       }
+      
+      // 显示确认对话框
+      setShowUndoPrompt(true);
     }
     setEditing(false);
   };
@@ -38,10 +53,21 @@ export default function InlineFieldEditor({ sectionId, fieldId, value, isName }:
   if (!editing) {
     return (
       <div
-        className="cursor-text whitespace-pre-wrap text-sm leading-6"
-        onClick={() => setEditing(true)}
+        className="cursor-text whitespace-pre-wrap text-sm leading-6 hover:bg-blue-50 rounded px-1"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          // 单击：选择字段
+          setSelectedField({ sectionId, fieldId });
+        }}
+        onDoubleClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          // 双击：编辑字段
+          setEditing(true);
+        }}
       >
-        {val || <span className="text-gray-400">（点击编辑字段）</span>}
+        {val || <span className="text-gray-400">（点击选择，双击编辑）</span>}
       </div>
     );
   }

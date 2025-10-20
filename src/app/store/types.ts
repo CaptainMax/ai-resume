@@ -88,6 +88,17 @@ export interface UiSlice {
     
     lastAddedPointId: string | null; // 用于跟踪最后添加的point，以便进行undo
     setLastAddedPointId: (id: string | null) => void;
+    
+    // AI修改高亮状态
+    aiModifiedPoints: Set<string>; // 存储被AI修改的point IDs
+    addAiModifiedPoint: (pointId: string) => void;
+    removeAiModifiedPoint: (pointId: string) => void;
+    clearAiModifiedPoints: () => void;
+    
+    // AI修改的原始内容
+    aiOriginalContents: Record<string, string>; // 存储AI修改前的原始内容
+    setAiOriginalContent: (pointId: string, originalContent: string) => void;
+    removeAiOriginalContent: (pointId: string) => void;
   }
 
 /** RootState */

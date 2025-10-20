@@ -76,9 +76,6 @@ export default function AiEditPage() {
         // ✅ 存入全局 store
         setSections(parsedData);
         setLoading(false);
-
-        // ✅ 提示成功
-        alert("✅ 简历解析成功！");
       } catch (err) {
         console.error("❌ 调用 /api/parseResume 出错:", err);
         alert("AI 解析失败，请检查网络或后端日志。");
@@ -105,8 +102,12 @@ export default function AiEditPage() {
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         <SectionList />
-        <ResumePreview />
-        <AiPanel />
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <ResumePreview />
+        </div>
+        <div className="flex-[0.4] min-w-0">
+          <AiPanel />
+        </div>
       </div>
     </div>
   );
