@@ -57,68 +57,66 @@ export default function ResumePreview() {
         <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={items} strategy={verticalListSortingStrategy}>
             <div className="space-y-4">
-              {sections.map((s) => (
-                <PreviewCard
-                  key={s.id}
-                  id={s.id}
-                  title={s.title}
-                  highlighted={flashSection === s.id}
-                  ref={setSectionRef(s.id)}
-                >
-                  <div className="space-y-2">
-                    {(s.fields ?? []).map((f) => (
-                      <div key={f.id} className="pl-2">
-                        {/* 单值字段 */}
-                        {/* {f.value !== undefined && (
+            {sections.map((s, i) => (
+              <PreviewCard
+                key={s.id || `${s.title}-${i}`}
+                id={s.id || `${s.title}-${i}`}
+                title={s.title}
+                highlighted={flashSection === s.id}
+                ref={setSectionRef(s.id || `${s.title}-${i}`)}
+              >
+                <div className="space-y-2">
+                  {(s.fields ?? []).map((f, i) => (
+                    <div key={f.id || `${s.id}-field-${i}`} className="pl-2">
+                      {/* 渲染字段名称 */}
+                      {f.name && (
+                        <div className="font-medium text-gray-800">
+                          <InlineFieldEditor
+                            sectionId={s.id}
+                            fieldId={f.id}
+                            value={f.name}
+                            isName={true}
+                          />
+                        </div>
+                      )}
+
+                      {/* 渲染字段内容 */}
+                      {f.value && (
+                        <div className="text-gray-700">
                           <InlineFieldEditor
                             sectionId={s.id}
                             fieldId={f.id}
                             value={f.value}
-                            isName={true}
+                            isName={false}
                           />
-                        )} */}
-                        {/* 渲染字段名称 */}
-                        {f.name && (
-                          <div className="font-medium text-gray-800">
-                            <InlineFieldEditor
-                              sectionId={s.id}
-                              fieldId={f.id}
-                              value={f.name}
-                              isName={true} // ✅ 编辑 name，而不是 value
-                            />
-                          </div>
-                        )}
+                        </div>
+                      )}
 
-                        {/* 渲染字段内容（value） */}
-                        {f.value && (
-                          <div className="text-gray-700">
-                            <InlineFieldEditor
-                              sectionId={s.id}
-                              fieldId={f.id}
-                              value={f.value}
-                              isName={false} // ✅ 编辑 value
-                            />
-                          </div>
-                        )}
+                      {/* 点状字段 */}
+                      {f.points && f.points.length > 0 && (
+                      <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                        {f.points.map((p, j) => {
+                          const pointContent = typeof p === "string" ? p : p.content;
+                          const pointId = typeof p === "string" ? `${f.id}-point-${j}` : p.id;
 
-                        {/* 点状字段 */}
-                        {f.points && f.points.length > 0 && (
-                          <ul className="list-disc pl-5 text-gray-700 space-y-1">
-                            {f.points.map((p) => (
-                              <li key={p.id}>
-                                <InlinePointEditor
-                                  sectionId={s.id}
-                                  fieldId={f.id}
-                                  pointId={p.id}
-                                  content={p.content}
-                                />
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                          return (
+                            <li key={pointId}>
+                              <InlinePointEditor
+                                sectionId={s.id}
+                                fieldId={f.id}
+                                pointId={pointId}
+                                content={pointContent}
+                              />
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+
+                    </div>
+                  ))}
+                </div>
+
                 </PreviewCard>
               ))}
             </div>

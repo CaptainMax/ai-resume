@@ -134,11 +134,12 @@ export default function SectionList() {
         >
           <SortableContext items={sectionItems} strategy={verticalListSortingStrategy}>
             <ul className="space-y-3">
-              {sections.map((s) => {
-                const isCollapsed = !!collapsed[s.id];
-                return (
-                  <li key={s.id} className="space-y-2">
-                    <SectionItem id={s.id} title={s.title} />
+            {sections.map((s, index) => {
+              const isCollapsed = !!collapsed[s.id];
+              return (
+                <li key={`${s.title}-${index}`} className="space-y-2">
+                  <SectionItem id={s.id || `${s.title}-${index}`} title={s.title} />
+
 
                     {!isCollapsed && (
                       <SortableContext
@@ -146,16 +147,16 @@ export default function SectionList() {
                         strategy={verticalListSortingStrategy}
                       >
                         <ul className="space-y-1 pl-4">
-                          {(s.fields ?? []).map((f) => (
-                            <FieldItem
-                              key={f.id}
-                              sid={s.id}
-                              fid={f.id}
-                              name={f.name}
-                              value={f.value}
-                              points={f.points}
-                            />
-                          ))}
+                        {(s.fields ?? []).map((f, i) => (
+                        <FieldItem
+                          key={`${f.name || "field"}-${i}`}
+                          sid={s.id}
+                          fid={f.id || `${f.name}-${i}`}
+                          name={f.name}
+                          value={f.value}
+                          points={f.points}
+                        />
+                      ))}
                         </ul>
                       </SortableContext>
                     )}
