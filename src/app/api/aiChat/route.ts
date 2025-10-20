@@ -13,28 +13,49 @@ export async function POST(req: Request) {
     }
 
     // 构建系统提示词，包含上下文信息
-    let systemPrompt = `You are a professional resume editing assistant. Your task is to help users improve resume content to make it more professional and attractive.
+    let systemPrompt = `You are a helpful resume editing assistant. You can help users edit their resume content naturally, just like ChatGPT.
 
-Important requirements:
-1. Provide specific improvement suggestions based on user instructions
-2. Maintain professional and accurate content
-3. Use concise and powerful language
-4. Provide specific modification suggestions, not general advice
-5. If user requests content rewriting (like "re-write", "rewrite", "improve", "optimize"), provide the improved version directly
-6. When rewriting content, maintain the same meaning but make it more professional and impactful
+You have access to the user's resume structure and can perform these actions:
+1. Add new education or work experience entries
+2. Add content to existing work experience entries  
+3. Rewrite or improve existing content
+4. Provide general resume advice
 
-Language preference:
-- If user explicitly requests "不要出现中文" or "no Chinese", respond ONLY in English
-- If user requests "不要出现英文" or "no English", respond ONLY in Chinese
-- Otherwise, respond in the same language as the user's message
+When the user wants to add something new or modify existing content, you should:
+- Understand their intent naturally (no need for specific keywords)
+- Use the context information to find the right place to make changes
+- Respond in the same language as the user's request
+- If they ask for English content, provide everything in English
 
-Special functions:
-- If user requests to add new education/work experience, return JSON format directly without any other text
-- For adding education, return: {"action": "add_education", "data": {"degree": "degree", "school": "school", "major": "major", "startDate": "start date", "endDate": "end date"}}
-- For adding work experience, return: {"action": "add_work", "data": {"company": "company", "position": "position", "startDate": "start date", "endDate": "end date", "description": "description"}}
-- For other requests, respond with normal text content
+For actions that modify the resume, return JSON in this flexible format:
+{
+  "action": {
+    "type": "add_field|remove_field|update_field|add_point|remove_point|update_point|move_field|move_point",
+    "data": {
+      "sectionId": "exact_section_id_from_context",
+      "fieldId": "exact_field_id_from_context", 
+      "pointId": "exact_point_id_from_context",
+      "fieldName": "field_name",
+      "content": "point_content",
+      "points": ["point1", "point2", "point3"]
+    }
+  }
+}
 
-Important: When user requests to add education or work experience, return ONLY JSON, no explanatory text!`;
+EXAMPLES:
+- Add education: {"action": {"type": "add_field", "data": {"sectionId": "education_section_id", "fieldName": "Master's - Trine University", "points": ["School: Trine University", "Major: MISI", "Duration: Fall 2023 - Fall 2025"]}}}
+- Add work: {"action": {"type": "add_field", "data": {"sectionId": "work_section_id", "fieldName": "Software Engineer - Apple", "points": ["Company: Apple", "Position: Software Engineer", "Duration: 2022-2025", "Description: ..."]}}}
+- Add point: {"action": {"type": "add_point", "data": {"sectionId": "section_id", "fieldId": "field_id", "content": "New point content"}}}
+- Update point: {"action": {"type": "update_point", "data": {"sectionId": "section_id", "fieldId": "field_id", "pointId": "point_id", "content": "Updated content"}}}
+- Remove field: {"action": {"type": "remove_field", "data": {"sectionId": "section_id", "fieldId": "field_id"}}}
+
+IMPORTANT: 
+- Use exact IDs from context
+- Be creative with field names and point content
+- Support any type of resume modification
+- No hardcoded field structures - let AI decide the best format
+
+For other requests, just respond normally with helpful text.`;
 
     // 如果有上下文信息，添加到提示词中
     if (context) {
@@ -42,13 +63,14 @@ Important: When user requests to add education or work experience, return ONLY J
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o", // 使用更强的模型
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message },
       ],
-      temperature: 0.7,
-      max_tokens: 1000,
+      temperature: 0.3, // 降低随机性，提高稳定性
+      max_tokens: 2000, // 增加token限制
+      top_p: 0.9,
     });
 
     const response = completion.choices[0].message.content || "抱歉，我无法处理您的请求。";
@@ -57,11 +79,27 @@ Important: When user requests to add education or work experience, return ONLY J
 
     // 检查是否是结构化操作
     try {
-      // 尝试从响应中提取JSON
-      let jsonMatch = response.match(/\{[\s\S]*\}/);
+      // 尝试多种方式提取JSON
+      let jsonMatch = null;
+      
+      // 方法1: 查找完整的JSON对象
+      jsonMatch = response.match(/\{[\s\S]*\}/);
+      
+      // 方法2: 如果方法1失败，尝试查找以{开头，以}结尾的内容
+      if (!jsonMatch) {
+        const startIndex = response.indexOf('{');
+        const lastIndex = response.lastIndexOf('}');
+        if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
+          jsonMatch = [response.substring(startIndex, lastIndex + 1)];
+        }
+      }
+      
       if (jsonMatch) {
-        const parsedResponse = JSON.parse(jsonMatch[0]);
-        if (parsedResponse.action) {
+        const jsonStr = jsonMatch[0];
+        console.log("🔍 提取的JSON字符串:", jsonStr);
+        
+        const parsedResponse = JSON.parse(jsonStr);
+        if (parsedResponse.action && parsedResponse.data) {
           console.log("🔧 检测到结构化操作:", parsedResponse);
           return NextResponse.json({ 
             success: true, 
@@ -72,7 +110,8 @@ Important: When user requests to add education or work experience, return ONLY J
         }
       }
     } catch (e) {
-      console.log("📝 不是JSON格式，正常处理");
+      console.log("📝 JSON解析失败:", e);
+      console.log("📝 原始响应:", response);
     }
 
     return NextResponse.json({ 

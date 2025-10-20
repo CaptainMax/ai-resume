@@ -14,7 +14,8 @@ export default function ChatInput({ onSend, isLoading = false }: { onSend: (msg:
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Ctrl+Enter 或 Cmd+Enter 发送
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       send();
     }
@@ -30,7 +31,7 @@ export default function ChatInput({ onSend, isLoading = false }: { onSend: (msg:
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder={isLoading ? "AI正在思考中..." : "输入给 AI 的指令… (Enter 发送, Shift+Enter 换行)"}
+          placeholder={isLoading ? "AI正在思考中..." : "输入给 AI 的指令… (Ctrl+Enter 发送, Enter 换行)"}
           disabled={isLoading}
         />
       </div>

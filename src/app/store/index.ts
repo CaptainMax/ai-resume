@@ -26,6 +26,7 @@ export const useResumeStore = create<ResumeState>()(
           selectedPoint: state.selectedPoint,
           lastAddedFieldId: state.lastAddedFieldId,
           lastModifiedPoint: state.lastModifiedPoint,
+          lastAddedPointId: state.lastAddedPointId,
         }),
         version: 1,
       }

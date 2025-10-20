@@ -85,6 +85,9 @@ export interface UiSlice {
     
     lastModifiedPoint: { sectionId: string; fieldId: string; pointId: string; originalContent: string } | null; // 用于跟踪最后修改的point
     setLastModifiedPoint: (point: { sectionId: string; fieldId: string; pointId: string; originalContent: string } | null) => void;
+    
+    lastAddedPointId: string | null; // 用于跟踪最后添加的point，以便进行undo
+    setLastAddedPointId: (id: string | null) => void;
   }
 
 /** RootState */

@@ -44,21 +44,25 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
   selectedPoint: null,
   setSelectedPoint: (sel) => set({ selectedPoint: sel }),
 
-  reset: () =>
-    set({
-    //   sections: initialSections,
-      collapsed: {},
-      collapsedFields: {},
-      selectedId: null,
-      selectedField: null,
-      selectedPoint: null,
-      lastAddedFieldId: null,
-    }),
+        reset: () =>
+          set({
+          //   sections: initialSections,
+            collapsed: {},
+            collapsedFields: {},
+            selectedId: null,
+            selectedField: null,
+            selectedPoint: null,
+            lastAddedFieldId: null,
+            lastAddedPointId: null,
+          }),
 
   lastAddedFieldId: null,
   setLastAddedFieldId: (id) => set({ lastAddedFieldId: id }),
 
   lastModifiedPoint: null,
   setLastModifiedPoint: (point) => set({ lastModifiedPoint: point }),
+
+  lastAddedPointId: null,
+  setLastAddedPointId: (id) => set({ lastAddedPointId: id }),
     }
 );
