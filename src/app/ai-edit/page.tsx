@@ -23,8 +23,10 @@ export default function AiEditPage() {
     const parseResume = async () => {
       try {
         console.log("📤 正在调用 /api/parseResume ...");
+        console.log("📝 发送的简历文本长度:", resumeText.length);
+        console.log("📝 简历文本前200字符:", resumeText.slice(0, 200));
 
-        const res = await fetch("/api/parseResume", {
+        const res = await fetch("/api/parseResume?" + Date.now(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ resumeText }),

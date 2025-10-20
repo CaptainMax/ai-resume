@@ -60,6 +60,11 @@ export interface UiSlice {
     toggleSection: (sectionId: string) => void;
     setAllCollapsed: (collapsed: boolean) => void;
   
+    // ✅ 新增：Field 折叠状态
+    collapsedFields: Record<string, boolean>;
+    toggleField: (fieldKey: string) => void;
+    setAllFieldsCollapsed: (collapsed: boolean) => void;
+  
     selectedId: string | null; // 选中的 Section
     setSelected: (id: string | null) => void;
   

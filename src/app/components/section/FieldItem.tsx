@@ -24,7 +24,11 @@ export default function FieldItem({ sid, fid, name, value, points }: FieldItemPr
 
   const style = { transform: CSS.Transform.toString(transform), transition };
 
-  const { addPoint, removeField, setSelectedField, setSelectedPoint } = useResumeStore();
+  const { addPoint, removeField, setSelectedField, setSelectedPoint, collapsedFields, toggleField } = useResumeStore();
+  
+  // ✅ 检查当前field是否折叠
+  const fieldCollapseKey = `${sid}-${fid}`;
+  const isCollapsed = collapsedFields[fieldCollapseKey] || false;
 
   return (
     <li
@@ -40,14 +44,31 @@ export default function FieldItem({ sid, fid, name, value, points }: FieldItemPr
     >
       {/* 标题 + 操作按钮 */}
       <div className="flex items-center justify-between font-medium">
-        <input
-          className="text-sm text-gray-800 border-b border-dashed focus:outline-none focus:border-blue-400"
-          value={name || ""}
-          onChange={(e) => {
-            e.stopPropagation();
-            useResumeStore.getState().updateFieldName(sid, fid, e.target.value);
-          }}
-        />
+        <div className="flex items-center space-x-2">
+          {/* ✅ 折叠/展开按钮 */}
+          {points && points.length > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleField(fieldCollapseKey);
+              }}
+              className="text-xs text-gray-500 hover:text-gray-700"
+              title={isCollapsed ? "展开" : "折叠"}
+            >
+              {isCollapsed ? "▶" : "▼"}
+            </button>
+          )}
+          
+          <input
+            className="text-sm text-gray-800 border-b border-dashed focus:outline-none focus:border-blue-400"
+            value={name || ""}
+            onChange={(e) => {
+              e.stopPropagation();
+              useResumeStore.getState().updateFieldName(sid, fid, e.target.value);
+            }}
+          />
+        </div>
+        
         <div className="space-x-2">
           <button
             onClick={(e) => {
@@ -85,7 +106,7 @@ export default function FieldItem({ sid, fid, name, value, points }: FieldItemPr
       </div>
 
       {/* ✅ 兼容 AI 输出（string / object 均可） */}
-      {points && points.length > 0 && (
+      {points && points.length > 0 && !isCollapsed && (
         <ul className="mt-1 space-y-1">
           {points.map((p, i) => {
             const pointId = typeof p === "string" ? `${fid}-point-${i}` : p.id;

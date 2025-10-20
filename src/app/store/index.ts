@@ -20,6 +20,7 @@ export const useResumeStore = create<ResumeState>()(
         partialize: (state) => ({
           sections: state.sections,
           collapsed: state.collapsed,
+          collapsedFields: state.collapsedFields,
           selectedId: state.selectedId,
           selectedField: state.selectedField, 
           selectedPoint: state.selectedPoint,

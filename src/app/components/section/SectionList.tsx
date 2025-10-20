@@ -22,7 +22,7 @@ export default function SectionList() {
   const [activePoint, setActivePoint] = useState<any>(null); // ✅ 当前拖拽点
   useEffect(() => setMounted(true), []);
 
-  const { sections, reorderSections, reorderFields, collapsed, setAllCollapsed } =
+  const { sections, reorderSections, reorderFields, collapsed, setAllCollapsed, setAllFieldsCollapsed } =
     useResumeStore();
 
   const sectionItems = useMemo(() => sections.map((s) => sectionKey(s.id)), [sections]);
@@ -108,18 +108,30 @@ export default function SectionList() {
     <aside className="w-1/5 bg-gray-100 border-r p-4 overflow-y-auto">
       <div className="flex items-center justify-between mb-2">
         <h2 className="font-bold">分区列表</h2>
-        <div className="space-x-2">
+        <div className="space-x-1">
           <button
             className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
             onClick={() => setAllCollapsed(true)}
           >
-            全部折叠
+            折叠Section
           </button>
           <button
             className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
             onClick={() => setAllCollapsed(false)}
           >
-            全部展开
+            展开Section
+          </button>
+          <button
+            className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
+            onClick={() => setAllFieldsCollapsed(true)}
+          >
+            折叠Field
+          </button>
+          <button
+            className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
+            onClick={() => setAllFieldsCollapsed(false)}
+          >
+            展开Field
           </button>
         </div>
       </div>

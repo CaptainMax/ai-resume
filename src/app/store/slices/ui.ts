@@ -15,6 +15,24 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
       return { collapsed: next };
     }),
 
+  // ✅ 新增：Field 折叠状态
+  collapsedFields: {},
+  toggleField: (fieldKey) =>
+    set((state) => ({
+      collapsedFields: { ...state.collapsedFields, [fieldKey]: !state.collapsedFields[fieldKey] },
+    })),
+  setAllFieldsCollapsed: (flag) =>
+    set((state) => {
+      const next: Record<string, boolean> = {};
+      state.sections.forEach((section) => {
+        section.fields.forEach((field) => {
+          const fieldKey = `${section.id}-${field.id}`;
+          next[fieldKey] = flag;
+        });
+      });
+      return { collapsedFields: next };
+    }),
+
   selectedId: null,
   setSelected: (id) => set({ selectedId: id }),
 
@@ -30,6 +48,7 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
     set({
     //   sections: initialSections,
       collapsed: {},
+      collapsedFields: {},
       selectedId: null,
       selectedField: null,
       selectedPoint: null,
