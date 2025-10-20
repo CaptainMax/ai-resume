@@ -79,6 +79,12 @@ export interface UiSlice {
     ) => void;
   
     reset: () => void;
+
+    lastAddedFieldId: string | null; // 用于跟踪最后添加的field，以便进行undo
+    setLastAddedFieldId: (id: string | null) => void;
+    
+    lastModifiedPoint: { sectionId: string; fieldId: string; pointId: string; originalContent: string } | null; // 用于跟踪最后修改的point
+    setLastModifiedPoint: (point: { sectionId: string; fieldId: string; pointId: string; originalContent: string } | null) => void;
   }
 
 /** RootState */

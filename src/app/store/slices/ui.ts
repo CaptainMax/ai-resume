@@ -52,6 +52,13 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
       selectedId: null,
       selectedField: null,
       selectedPoint: null,
+      lastAddedFieldId: null,
     }),
+
+  lastAddedFieldId: null,
+  setLastAddedFieldId: (id) => set({ lastAddedFieldId: id }),
+
+  lastModifiedPoint: null,
+  setLastModifiedPoint: (point) => set({ lastModifiedPoint: point }),
     }
 );

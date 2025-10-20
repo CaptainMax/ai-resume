@@ -31,16 +31,20 @@ export default function SelectionEditor() {
     console.log("正在编辑 Point:", pointId, point);
 
     return (
-      <div>
-        <div className="text-sm font-medium mb-1">编辑 Point</div>
-        <input
-          className="w-full border rounded px-2 py-1 text-sm"
-          value={point.content ?? ""}
-          placeholder="请输入 point 内容"
-          onChange={(e) =>
-            updatePoint(sectionId, fieldId, pointId, e.target.value)
-          }
-        />
+      <div className="space-y-3">
+        <div className="text-sm font-medium text-gray-700">编辑 Point</div>
+        
+        {/* 合并的编辑区域 */}
+        <div>
+          <textarea
+            className="w-full border rounded-lg px-3 py-3 text-sm min-h-[150px] resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            value={point.content ?? ""}
+            placeholder="请输入 point 内容..."
+            onChange={(e) =>
+              updatePoint(sectionId, fieldId, pointId, e.target.value)
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -53,17 +57,30 @@ export default function SelectionEditor() {
     if (!field) return null;
 
     return (
-      <div>
-        <div className="text-sm font-medium mb-1">编辑 Field</div>
+      <div className="space-y-3">
+        <div className="text-sm font-medium text-gray-700">编辑 Field</div>
 
-        {/* Field 名称 */}
-        <label className="text-xs text-gray-500">字段名称（name）</label>
-        <input
-          className="w-full border rounded px-2 py-1 text-sm mb-2"
-          value={field.name ?? ""}
-          placeholder="请输入字段名称"
-          onChange={(e) => updateFieldName(sectionId, fieldId, e.target.value)}
-        />
+        {/* 显示当前field信息 */}
+        <div className="bg-gray-50 border rounded-lg p-3">
+          <div className="text-xs text-gray-500 mb-2">当前字段：</div>
+          <div className="text-sm text-gray-800 font-medium">{field.name || "（未命名）"}</div>
+          {field.points && field.points.length > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              包含 {field.points.length} 个条目
+            </div>
+          )}
+        </div>
+
+        {/* Field 名称编辑 */}
+        <div>
+          <label className="text-xs text-gray-500 mb-1 block">字段名称：</label>
+          <input
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            value={field.name ?? ""}
+            placeholder="请输入字段名称"
+            onChange={(e) => updateFieldName(sectionId, fieldId, e.target.value)}
+          />
+        </div>
       </div>
     );
   }
@@ -105,14 +122,30 @@ export default function SelectionEditor() {
     console.log("正在编辑 Section:", selectedId, section);
 
     return (
-      <div>
-        <div className="text-sm font-medium mb-1">编辑 Section 标题</div>
-        <input
-          className="w-full border rounded px-2 py-1 text-sm"
-          value={section.title ?? ""}
-          placeholder="请输入 section 标题"
-          onChange={(e) => updateSectionTitle(section.id, e.target.value)}
-        />
+      <div className="space-y-3">
+        <div className="text-sm font-medium text-gray-700">编辑 Section</div>
+        
+        {/* 显示当前section信息 */}
+        <div className="bg-gray-50 border rounded-lg p-3">
+          <div className="text-xs text-gray-500 mb-2">当前分区：</div>
+          <div className="text-sm text-gray-800 font-medium">{section.title || "（未命名）"}</div>
+          {section.fields && section.fields.length > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              包含 {section.fields.length} 个字段
+            </div>
+          )}
+        </div>
+
+        {/* Section 标题编辑 */}
+        <div>
+          <label className="text-xs text-gray-500 mb-1 block">分区标题：</label>
+          <input
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            value={section.title ?? ""}
+            placeholder="请输入 section 标题"
+            onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+          />
+        </div>
       </div>
     );
   }

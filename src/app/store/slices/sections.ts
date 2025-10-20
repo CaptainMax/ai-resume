@@ -31,13 +31,18 @@ export const createSectionsSlice: SliceCreator<SectionsSlice> = (set, get) => ({
 
   // ---------- Field 操作 ----------
   addField: (sectionId: string, field: ResumeField) =>
-    set((state) => ({
-      sections: state.sections.map((s) =>
-        s.id === sectionId
-          ? { ...s, fields: [...(s.fields ?? []), field] }
-          : s
-      ),
-    })),
+    set((state) => {
+      const newState = {
+        sections: state.sections.map((s) =>
+          s.id === sectionId
+            ? { ...s, fields: [...(s.fields ?? []), field] }
+            : s
+        ),
+      };
+      // 记录最后添加的field ID，以便进行undo
+      get().setLastAddedFieldId(field.id);
+      return newState;
+    }),
 
   // ✅ 更新 Field 值
   updateFieldValue: (sectionId: string, fieldId: string, value: string) =>
