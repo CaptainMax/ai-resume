@@ -94,24 +94,51 @@ export default function ResumePreview() {
 
                       {/* 点状字段 */}
                       {f.points && f.points.length > 0 && (
-                      <ul className="list-disc pl-5 text-gray-700 space-y-1">
-                        {f.points.map((p, j) => {
-                          const pointContent = typeof p === "string" ? p : p.content;
-                          const pointId = typeof p === "string" ? `${f.id}-point-${j}` : p.id;
+                        // 检查是否是Technical Skills section
+                        s.title.toLowerCase().includes('technical') || s.title.toLowerCase().includes('skills') ? (
+                          // Technical Skills: 美观的标签布局
+                          <div className="text-gray-700">
+                            <div className="flex flex-wrap gap-2">
+                              {f.points.map((p, j) => {
+                                const pointContent = typeof p === "string" ? p : p.content;
+                                const pointId = typeof p === "string" ? `${f.id}-point-${j}` : p.id;
 
-                          return (
-                            <li key={pointId}>
-                              <InlinePointEditor
-                                sectionId={s.id}
-                                fieldId={f.id}
-                                pointId={pointId}
-                                content={pointContent}
-                              />
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
+                                return (
+                                  <div key={pointId} className="inline-flex">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-full px-3 py-1 text-sm text-blue-800 hover:bg-blue-100 transition-colors">
+                                      <InlinePointEditor
+                                        sectionId={s.id}
+                                        fieldId={f.id}
+                                        pointId={pointId}
+                                        content={pointContent}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          // 其他section: 竖向列表
+                          <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                            {f.points.map((p, j) => {
+                              const pointContent = typeof p === "string" ? p : p.content;
+                              const pointId = typeof p === "string" ? `${f.id}-point-${j}` : p.id;
+
+                              return (
+                                <li key={pointId}>
+                                  <InlinePointEditor
+                                    sectionId={s.id}
+                                    fieldId={f.id}
+                                    pointId={pointId}
+                                    content={pointContent}
+                                  />
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )
+                      )}
 
                     </div>
                   ))}

@@ -4,6 +4,7 @@
 import { useStructuredActions } from "./useStructuredActions";
 import { useRewriteHandler } from "./useRewriteHandler";
 import { useLanguageDetection } from "./useLanguageDetection";
+import { ResumeSection } from "@/app/store/types";
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
 
@@ -14,10 +15,10 @@ export function useAiChat() {
 
   const handleSend = async (
     msg: string,
-    sections: any[],
+    sections: ResumeSection[],
     selectedId: string | null,
-    selectedField: any,
-    selectedPoint: any,
+    selectedField: { sectionId: string; fieldId: string } | null,
+    selectedPoint: { sectionId: string; fieldId: string; pointId: string } | null,
     messages: ChatMsg[],
     setMessages: (fn: (m: ChatMsg[]) => ChatMsg[]) => void,
     setIsLoading: (loading: boolean) => void,

@@ -14,40 +14,80 @@ export async function POST(req: Request) {
   }
 
   const systemPrompt = `
-你是一名专业的简历解析助手。请将用户提供的简历文本转换为结构化 JSON。
+    你是一名专业的简历解析助手。请将用户提供的简历文本转换为结构化 JSON。
 
-CRITICAL REQUIREMENTS:
-1. 必须输出一个JSON数组，以 [ 开始，以 ] 结束
-2. 只能输出纯 JSON，不要任何多余的文字、Markdown 格式、注释或代码块
-3. 确保 JSON 格式完全正确，所有括号、引号、逗号都要匹配
-4. 所有字符串必须用双引号包围
-5. 数组和对象必须正确闭合
-6. 不要有尾随逗号
+    CRITICAL REQUIREMENTS:
+    1. 必须输出一个JSON数组，以 [ 开始，以 ] 结束
+    2. 只能输出纯 JSON，不要任何多余的文字、Markdown 格式、注释或代码块
+    3. 确保 JSON 格式完全正确，所有括号、引号、逗号都要匹配
+    4. 所有字符串必须用双引号包围
+    5. 数组和对象必须正确闭合
+    6. 不要有尾随逗号
 
-REQUIRED JSON FORMAT (MUST BE AN ARRAY):
-[
-  {
-    "section": "Header",
-    "fields": [
-      { "name": "Email", "points": ["max.jian.ma@gmail.com"] },
-      { "name": "Phone No", "points": ["214-796-0666"] },
-      { "name": "Web", "points": ["http://maxonboard.com"] }
-    ]
-  },
-  {
-    "section": "Education",
-    "fields": [
-      { 
-        "name": "University Name", 
-        "points": ["Location", "Date Range", "Degree"] 
+    IMPORTANT PARSING RULES:
+    - 仔细阅读整个简历，不要遗漏任何信息
+    - 必须提取所有部分：Header, Work Experience, Education, Technical Skills, Projects, Certifications等
+    - 对于工作经历，每个工作都要完整提取，包括公司名称、职位、时间、地点、描述、职责等
+    - 对于每个职责点，都要单独作为一个point
+    - 不要合并或简化内容，保持原始信息的完整性
+    - 如果有多段工作经历，每段都要单独处理
+    - 确保提取所有技能、教育背景、项目经验等
+
+    REQUIRED JSON FORMAT (MUST BE AN ARRAY):
+    [
+      {
+        "section": "Header",
+        "fields": [
+          { "name": "Email", "points": ["max.jian.ma@gmail.com"] },
+          { "name": "Phone No", "points": ["214-796-0666"] },
+          { "name": "Web", "points": ["http://maxonboard.com"] }
+        ]
+      },
+      {
+        "section": "Work Experience",
+        "fields": [
+          { 
+            "name": "Company Name", 
+            "points": [
+              "Company: eBay",
+              "Location: Austin, TX",
+              "Date: Aug 2024 to Current",
+              "Project: eBay Migration Project",
+              "Description: Worked on eBay's API migration initiative...",
+              "Responsibility: Migrated eBay's legacy APIs to new RESTful APIs",
+              "Responsibility: Developed, tested, and deployed new API integrations",
+              "Responsibility: Optimized API performance and improved data exchange efficiency"
+            ]
+          }
+        ]
+      },
+      {
+        "section": "Education",
+        "fields": [
+          { "name": "University Name", "points": ["University Name", "Location", "Date Range", "Degree"] }
+        ]
+      },
+      {
+        "section": "Technical Skills",
+        "fields": [
+          { "name": "Skills", "points": ["Java", "Spring Boot", "AWS", "Kubernetes", "Docker"] }
+        ]
+      },
+      {
+        "section": "Projects",
+        "fields": [
+          { "name": "Project Name", "points": ["Project Description", "Technologies Used", "Key Achievements"] }
+        ]
       }
     ]
-  }
-]
 
-IMPORTANT: 输出必须以 [ 开始，以 ] 结束。不要输出单个对象，必须是数组格式。
-请直接输出 JSON 数组，不要添加任何说明文字。
-`;
+    IMPORTANT: 
+    - 输出必须以 [ 开始，以 ] 结束
+    - 每个工作经历都要完整提取所有信息
+    - 每个职责点都要单独列出
+    - 不要遗漏任何内容
+    请直接输出 JSON 数组，不要添加任何说明文字。
+    `;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -57,7 +97,7 @@ IMPORTANT: 输出必须以 [ 开始，以 ] 结束。不要输出单个对象，
         { role: "user", content: resumeText },
       ],
       temperature: 0.1, // 降低随机性
-      max_tokens: 4000, // 确保有足够token
+      max_tokens: 6000, // 合理的token限制，足够处理完整内容
       top_p: 0.9, // 增加确定性
     });
 
@@ -381,10 +421,42 @@ IMPORTANT: 输出必须以 [ 开始，以 ] 结束。不要输出单个对象，
           const sectionId = `section-${index}`;
           const fields = (item.fields || []).map((field: any, fieldIndex: number) => {
             const fieldId = `field-${index}-${fieldIndex}`;
-            const points = (field.points || []).map((point: any, pointIndex: number) => ({
-              id: `point-${index}-${fieldIndex}-${pointIndex}`,
-              content: typeof point === 'string' ? point : JSON.stringify(point)
-            }));
+            const points = (field.points || []).map((point: any, pointIndex: number) => {
+              let content = '';
+              if (typeof point === 'string') {
+                content = point;
+              } else if (typeof point === 'object' && point !== null) {
+                console.log('🔍 处理复杂point对象:', point);
+                
+                // 尝试提取有意义的内容
+                if (point.description) {
+                  content = point.description;
+                } else if (point.content) {
+                  content = point.content;
+                } else if (point.responsibilities && Array.isArray(point.responsibilities)) {
+                  content = point.responsibilities.join('; ');
+                } else if (point.company && point.date_range) {
+                  content = `${point.company} - ${point.date_range}`;
+                } else {
+                  // 更宽松的降级处理：显示所有可用的键值对
+                  const keyInfo = [];
+                  for (const [key, value] of Object.entries(point)) {
+                    if (typeof value === 'string' && value.trim()) {
+                      keyInfo.push(`${key}: ${value}`);
+                    } else if (Array.isArray(value) && value.length > 0) {
+                      keyInfo.push(`${key}: ${value.join(', ')}`);
+                    }
+                  }
+                  content = keyInfo.length > 0 ? keyInfo.join(' | ') : JSON.stringify(point);
+                }
+              }
+              
+              console.log('📝 最终content:', content);
+              return {
+                id: `point-${index}-${fieldIndex}-${pointIndex}`,
+                content: content || 'No content'
+              };
+            });
             
             return {
               id: fieldId,
@@ -415,10 +487,42 @@ IMPORTANT: 输出必须以 [ 开始，以 ] 结束。不要输出单个对象，
         } else if (typeof content === "object" && content !== null) {
           for (const [name, value] of Object.entries(content)) {
             if (Array.isArray(value)) {
-              const points = value.map((point, index) => ({
-                id: `point-${section}-${name}-${index}`,
-                content: typeof point === 'string' ? point : JSON.stringify(point)
-              }));
+              const points = value.map((point, index) => {
+                let content = '';
+                if (typeof point === 'string') {
+                  content = point;
+                } else if (typeof point === 'object' && point !== null) {
+                  console.log('🔍 处理复杂point对象 (对象模式):', point);
+                  
+                  // 尝试提取有意义的内容
+                  if (point.description) {
+                    content = point.description;
+                  } else if (point.content) {
+                    content = point.content;
+                  } else if (point.responsibilities && Array.isArray(point.responsibilities)) {
+                    content = point.responsibilities.join('; ');
+                  } else if (point.company && point.date_range) {
+                    content = `${point.company} - ${point.date_range}`;
+                  } else {
+                    // 更宽松的降级处理：显示所有可用的键值对
+                    const keyInfo = [];
+                    for (const [key, value] of Object.entries(point)) {
+                      if (typeof value === 'string' && value.trim()) {
+                        keyInfo.push(`${key}: ${value}`);
+                      } else if (Array.isArray(value) && value.length > 0) {
+                        keyInfo.push(`${key}: ${value.join(', ')}`);
+                      }
+                    }
+                    content = keyInfo.length > 0 ? keyInfo.join(' | ') : JSON.stringify(point);
+                  }
+                }
+                
+                console.log('📝 最终content (对象模式):', content);
+                return {
+                  id: `point-${section}-${name}-${index}`,
+                  content: content || 'No content'
+                };
+              });
               fields.push({ 
                 id: `field-${section}-${name}`,
                 name, 

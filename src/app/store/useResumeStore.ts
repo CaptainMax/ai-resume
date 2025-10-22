@@ -7,6 +7,8 @@ export type {
   ResumeSection,
   ResumeField,
   ResumePoint,
+  SectionsSlice,
+  UiSlice,
 } from "./types";
 export { initialSections } from "./initial";
 

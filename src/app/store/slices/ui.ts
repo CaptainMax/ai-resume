@@ -57,6 +57,7 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
             lastModifiedPoint: null,
             aiModifiedPoints: new Set<string>(),
             aiOriginalContents: {},
+            showUndoPrompt: false,
           }),
 
   lastAddedFieldId: null,
@@ -94,5 +95,9 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
       delete newContents[pointId];
       return { aiOriginalContents: newContents };
     }),
+    
+  // 撤销提示状态
+  showUndoPrompt: false,
+  setShowUndoPrompt: (show) => set({ showUndoPrompt: show }),
     }
 );

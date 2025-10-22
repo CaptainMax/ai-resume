@@ -5,15 +5,11 @@
 // Section 的 key
 export const sectionKey = (id: string) => `section:${id}`;
 
-// Block 的 key（老的）
-export const blockKey = (sectionId: string, id: string) =>
-  `block:${sectionId}:${id}`;
-
-// Field 的 key（新的）
+// Field 的 key
 export const fieldKey = (sectionId: string, id: string) =>
   `field:${sectionId}:${id}`;
 
-// Point 的 key（新的）
+// Point 的 key
 export const pointKey = (sectionId: string, fieldId: string, pointId: string) =>
   `point:${sectionId}:${fieldId}:${pointId}`;
 
@@ -21,7 +17,6 @@ export const pointKey = (sectionId: string, fieldId: string, pointId: string) =>
 
 export type DragKey =
   | { kind: "section"; sectionId: string }
-  | { kind: "block"; sectionId: string; blockId: string }
   | { kind: "field"; sectionId: string; fieldId: string }
   | { kind: "point"; sectionId: string; fieldId: string; pointId: string };
 
@@ -30,12 +25,6 @@ export type DragKey =
 export function parseDragKey(raw: string): DragKey | null {
   if (raw.startsWith("section:")) {
     return { kind: "section", sectionId: raw.slice("section:".length) };
-  }
-  if (raw.startsWith("block:")) {
-    const parts = raw.split(":"); // block:<sid>:<bid>
-    if (parts.length === 3) {
-      return { kind: "block", sectionId: parts[1], blockId: parts[2] };
-    }
   }
   if (raw.startsWith("field:")) {
     const parts = raw.split(":"); // field:<sid>:<fid>

@@ -75,9 +75,9 @@ export function useRewriteHandler() {
       
       // 保存原始内容和重写内容，显示确认对话框
       const { sectionId, fieldId, pointId } = selectedPoint;
-      const section = sections.find((s) => s.id === sectionId);
-      const field = section?.fields.find((f) => f.id === fieldId);
-      const point = field?.points?.find((p) => p.id === pointId);
+      const section = sections.find((s: any) => s.id === sectionId);
+      const field = section?.fields.find((f: any) => f.id === fieldId);
+      const point = field?.points?.find((p: any) => p.id === pointId);
       
       if (point) {
         // 先保存原始内容用于撤销

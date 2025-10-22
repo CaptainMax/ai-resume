@@ -6,7 +6,7 @@ import { useResumeStore } from "@/app/store/useResumeStore";
 export function useStructuredActions() {
   const { sections, addField, addPoint, setLastAddedFieldId, setLastAddedPointId, addAiModifiedPoint } = useResumeStore();
 
-  const handleStructuredAction = async (action: string, data: any) => {
+  const handleStructuredAction = async (action: string, data: Record<string, any>) => {
     console.log("🔧 执行结构化操作:", action, data);
     console.log("📅 时间数据:", { 
       startDate: data.startDate, 
