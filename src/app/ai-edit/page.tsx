@@ -6,10 +6,12 @@ import SectionList from "../components/section/SectionList";
 import ResumePreview from "../components/resumePreview/ResumePreview";
 import { AiPanel } from "../components/aiPanel";
 import { useResumeStore } from "../store/useResumeStore";
+import { useFeedbackCollection } from "../components/aiPanel/hooks/useFeedbackCollection";
 
 export default function AiEditPage() {
   const [loading, setLoading] = useState(true);
   const { setSections } = useResumeStore();
+  const { recordOriginalData } = useFeedbackCollection();
 
   useEffect(() => {
     const resumeText = localStorage.getItem("resumeText");
@@ -42,12 +44,30 @@ export default function AiEditPage() {
           return;
         }
 
+        // 🎯 显示解析来源信息
+        const parseSource = data.source || 'Unknown';
+        const confidence = data.data?.metadata?.confidence || 'N/A';
+        console.log(`📊 解析来源: ${parseSource}, 置信度: ${confidence}`);
+        
+        // 在控制台显示解析信息
+        if (parseSource === 'ParseResumeAgent') {
+          console.log('🚀 使用了快速规则解析');
+        } else if (parseSource === 'ChatGPT') {
+          console.log('🤖 使用了AI智能解析');
+        }
+
         let parsedData = [];
 
         try {
-          // ✅ 如果 result 已经是数组（后端已 JSON.parse）
-          if (Array.isArray(data.result)) {
+          // ✅ 新API返回的是 data.data (直接是数组)
+          if (data.data && Array.isArray(data.data)) {
+            parsedData = data.data;
+            console.log("✅ 使用新API格式，解析到", parsedData.length, "个sections");
+          }
+          // ✅ 兼容旧格式：如果 result 已经是数组（后端已 JSON.parse）
+          else if (Array.isArray(data.result)) {
             parsedData = data.result;
+            console.log("✅ 使用旧API格式，解析到", parsedData.length, "个sections");
           }
           // ✅ 如果是字符串形式的 JSON（容错）
           else if (typeof data.result === "string") {
@@ -62,19 +82,26 @@ export default function AiEditPage() {
             }
 
             parsedData = JSON.parse(content);
+            console.log("✅ 解析字符串JSON，解析到", parsedData.length, "个sections");
           } else {
+            console.error("❌ 数据格式异常:", data);
             throw new Error("AI 输出为空或格式异常");
           }
 
           console.log("✅ 最终解析结果:", parsedData);
         } catch (err) {
-          console.error("⚠️ AI 输出不是标准 JSON:", err);
-          alert("AI 解析失败：AI 输出不是合法 JSON");
+          console.error("⚠️ 数据解析失败:", err);
+          console.error("⚠️ 原始数据:", data);
+          alert("AI 解析失败：数据格式异常");
           parsedData = [];
         }
 
         // ✅ 存入全局 store
         setSections(parsedData);
+        
+        // 🧠 记录原始数据用于反馈收集
+        recordOriginalData(resumeText, parsedData);
+        
         setLoading(false);
       } catch (err) {
         console.error("❌ 调用 /api/parseResume 出错:", err);

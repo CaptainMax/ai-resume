@@ -37,7 +37,33 @@ export default function Upload() {
         body: formData,
       });
 
-      const data = await res.json();
+      // 检查响应状态
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('API错误:', res.status, errorText);
+        alert("解析失败：" + (errorText || `HTTP ${res.status}`));
+        setLoading(false);
+        return;
+      }
+
+      // 检查响应内容
+      const responseText = await res.text();
+      if (!responseText) {
+        alert("解析失败：服务器返回空响应");
+        setLoading(false);
+        return;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON解析错误:', parseError);
+        console.error('响应内容:', responseText);
+        alert("解析失败：服务器返回格式错误");
+        setLoading(false);
+        return;
+      }
 
       if (data.error) {
         alert("解析失败：" + data.error);

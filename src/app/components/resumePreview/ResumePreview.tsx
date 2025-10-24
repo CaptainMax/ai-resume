@@ -68,8 +68,9 @@ export default function ResumePreview() {
                 <div className="space-y-1">
                   {(s.fields ?? []).map((f, i) => (
                     <div key={f.id || `${s.id}-field-${i}`} className="pl-2">
-                      {/* 渲染字段名称 */}
-                      {f.name && (
+                      {/* 渲染字段名称和内容 */}
+                      {f.name && f.value && f.name === f.value ? (
+                        // 如果字段名和值相同，只显示一次
                         <div className="font-medium text-gray-800">
                           <InlineFieldEditor
                             sectionId={s.id}
@@ -78,18 +79,30 @@ export default function ResumePreview() {
                             isName={true}
                           />
                         </div>
-                      )}
-
-                      {/* 渲染字段内容 */}
-                      {f.value && (
-                        <div className="text-gray-700">
-                          <InlineFieldEditor
-                            sectionId={s.id}
-                            fieldId={f.id}
-                            value={f.value}
-                            isName={false}
-                          />
-                        </div>
+                      ) : (
+                        // 如果字段名和值不同，分别显示
+                        <>
+                          {f.name && (
+                            <div className="font-medium text-gray-800">
+                              <InlineFieldEditor
+                                sectionId={s.id}
+                                fieldId={f.id}
+                                value={f.name}
+                                isName={true}
+                              />
+                            </div>
+                          )}
+                          {f.value && (
+                            <div className="text-gray-700">
+                              <InlineFieldEditor
+                                sectionId={s.id}
+                                fieldId={f.id}
+                                value={f.value}
+                                isName={false}
+                              />
+                            </div>
+                          )}
+                        </>
                       )}
 
                       {/* 点状字段 */}

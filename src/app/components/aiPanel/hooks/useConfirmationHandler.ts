@@ -3,6 +3,7 @@
 
 import { useResumeStore } from "@/app/store/useResumeStore";
 import { useLanguageDetection } from "./useLanguageDetection";
+import { useFeedbackCollection } from "./useFeedbackCollection";
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
 
@@ -23,9 +24,34 @@ export function useConfirmationHandler() {
   } = useResumeStore();
   
   const { shouldUseEnglish } = useLanguageDetection();
+  const { recordFieldEdit, recordPointEdit, recordPointAdd } = useFeedbackCollection();
 
   // 用户确认保留AI生成的修改
   const handleConfirmKeep = (messages: ChatMsg[], setMessages: (fn: (m: ChatMsg[]) => ChatMsg[]) => void) => {
+    // 🧠 记录反馈：用户确认保留AI修改
+    if (lastModifiedPoint) {
+      const { sectionId, fieldId, pointId, originalContent } = lastModifiedPoint;
+      // 获取当前内容作为新内容
+      const field = sections.find(s => s.id === sectionId)?.fields.find(f => f.id === fieldId);
+      const point = field?.points?.find(p => p.id === pointId);
+      if (point) {
+        recordPointEdit(sectionId, fieldId, pointId, originalContent, point.content);
+      }
+    }
+    
+    if (lastAddedPointId) {
+      // 记录新添加的point
+      for (const section of sections) {
+        for (const field of section.fields) {
+          const point = field.points?.find(p => p.id === lastAddedPointId);
+          if (point) {
+            recordPointAdd(section.id, field.id, lastAddedPointId, point.content);
+            break;
+          }
+        }
+      }
+    }
+    
     setLastAddedFieldId(null); // 清除最后添加的field ID
     setLastAddedPointId(null); // 清除最后添加的point ID
     setLastModifiedPoint(null); // 清除最后修改的point信息

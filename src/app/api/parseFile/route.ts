@@ -15,10 +15,28 @@ export async function POST(req: Request) {
 
   // ✅ 动态导入 pdf-parse（TypeScript 不会报错）
   if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-    const pdfParseModule: any = await import("pdf-parse"); // 👈 关键改动
-    const pdfParse = pdfParseModule.default || pdfParseModule; // ✅ 通吃两种导出形式
-    const parsed = await pdfParse(buffer);
-    text = parsed.text;
+    try {
+      const pdfParseModule: any = await import("pdf-parse");
+      const pdfParse = pdfParseModule.default || pdfParseModule;
+      
+      // 检查是否是函数
+      if (typeof pdfParse === 'function') {
+        const parsed = await pdfParse(buffer);
+        text = parsed.text;
+      } else {
+        console.error('pdfParse is not a function:', typeof pdfParse);
+        return NextResponse.json(
+          { error: "PDF parsing failed: pdfParse is not a function" },
+          { status: 500 }
+        );
+      }
+    } catch (error) {
+      console.error('PDF parsing error:', error);
+      return NextResponse.json(
+        { error: "PDF parsing failed: " + (error instanceof Error ? error.message : String(error)) },
+        { status: 500 }
+      );
+    }
   }
 
   // ✅ Word 文件解析
@@ -39,6 +57,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const cleaned = text.replace(/\s+/g, " ").trim();
+  // 只清理多余的空格，但保留换行符结构
+  const cleaned = text
+    .replace(/\r\n/g, '\n')  // 标准化换行符
+    .replace(/\r/g, '\n')    // 标准化换行符
+    .replace(/[ \t]+/g, ' ') // 只压缩空格和制表符
+    .replace(/\n\s*\n/g, '\n') // 移除多余空行
+    .trim();
+  
   return NextResponse.json({ text: cleaned });
 }

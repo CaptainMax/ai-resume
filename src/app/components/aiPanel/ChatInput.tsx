@@ -2,7 +2,17 @@
 
 import { useRef, useState } from "react";
 import { useAutosizeTextArea } from "../hooks/useAutosizeTextArea";
-export default function ChatInput({ onSend, isLoading = false }: { onSend: (msg: string) => void; isLoading?: boolean }) {
+export default function ChatInput({ 
+  onSend, 
+  isLoading = false, 
+  onShowLearningInsights,
+  onShowConfidenceEvolution
+}: { 
+  onSend: (msg: string) => void; 
+  isLoading?: boolean;
+  onShowLearningInsights?: () => void;
+  onShowConfidenceEvolution?: () => void;
+}) {
   const [input, setInput] = useState("");
   const ref = useRef<HTMLTextAreaElement | null>(null);
   useAutosizeTextArea(ref.current, input);
@@ -35,7 +45,25 @@ export default function ChatInput({ onSend, isLoading = false }: { onSend: (msg:
           disabled={isLoading}
         />
       </div>
-      <div className="mt-3 flex justify-end">
+      <div className="mt-3 flex justify-between">
+        <div className="flex space-x-2">
+          <button
+            onClick={onShowLearningInsights}
+            className="px-3 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
+          >
+            <span>🧠</span>
+            <span>学习洞察</span>
+          </button>
+          
+          <button
+            onClick={onShowConfidenceEvolution}
+            className="px-3 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
+          >
+            <span>🎯</span>
+            <span>置信度进化</span>
+          </button>
+        </div>
+        
         <button
           onClick={send}
           disabled={isLoading}
