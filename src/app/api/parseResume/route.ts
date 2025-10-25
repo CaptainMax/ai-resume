@@ -44,14 +44,23 @@ export async function POST(req: Request) {
     - 必须提取所有部分：Header, Work Experience, Education, Technical Skills, Projects, Certifications等
     - 对于工作经历，每个工作都要完整提取，包括公司名称、职位、时间、地点、描述、职责等
     - 公司名称要放在field的value字段中，不要放在points中
+    - 大学名称要放在field的value字段中，不要放在points中
     - 对于每个职责点，都要单独作为一个point
     - 不要合并或简化内容，保持原始信息的完整性
     - 如果有多段工作经历，每段都要单独处理
     - 确保提取所有技能、教育背景、项目经验等
     - 工作经历格式：Company Name的value字段放公司全名，points放其他详细信息
-    - 确保公司名称完整提取，不要截断或遗漏
+    - 教育经历格式：University Name的value字段放大学全名，points放其他详细信息
+    - 确保公司名称和大学名称完整提取，不要截断或遗漏
     - 每个工作经历都要有独立的Company Name field，value字段包含完整公司名称
-    - 重要：Company Name字段必须有value属性，包含完整的公司名称
+    - 每个教育经历都要有独立的University Name field，value字段包含完整大学名称
+    - 重要：Company Name和University Name字段必须有value属性，包含完整的名称
+    
+    🚨 关键结构要求：
+    - 所有工作经历必须放在同一个"Work Experience" section中
+    - 每个公司作为一个独立的field，不要创建多个"Work Experience" sections
+    - 正确的结构：一个"Work Experience" section包含多个公司fields
+    - 错误的结构：多个"Work Experience" sections，每个包含一个公司
     
     🎯 工作经历解析特别规则：
     - 当遇到 "Apple (Apple Online Store - Onsite-Vendor)" 这种格式时：
@@ -71,6 +80,21 @@ export async function POST(req: Request) {
     - 如果公司名称是 "Apple Inc."，那么value应该是 "Apple Inc."
     - 如果公司名称是 "Apple"，那么value应该是 "Apple"
     - 公司名称必须从原始文本中准确提取，不能遗漏或截断
+    
+    🎯 教育经历解析特别规则：
+    - 当遇到 "The University of Texas at Arlington" 这种格式时：
+      * University Name的value应该是 "The University of Texas at Arlington"
+      * 学位信息应该作为单独的point，格式为 "Degree: [学位名称]"
+    - 当遇到 "MIT" 这种格式时：
+      * University Name的value应该是 "MIT"
+    - 时间信息应该作为 "Date: [时间范围]" 的point
+    - 专业信息应该作为 "Major: [专业名称]" 的point
+    - 地点信息应该作为 "Location: [地点]" 的point
+    
+    ⚠️ 重要：University Name字段的value属性是必须的，不能为空或null！
+    - 如果大学名称是 "The University of Texas at Arlington"，那么value应该是 "The University of Texas at Arlington"
+    - 如果大学名称是 "MIT"，那么value应该是 "MIT"
+    - 大学名称必须从原始文本中准确提取，不能遗漏或截断
 
     REQUIRED JSON FORMAT (MUST BE AN ARRAY):
     [
@@ -97,12 +121,7 @@ export async function POST(req: Request) {
               "Responsibility: Developed, tested, and deployed new API integrations",
               "Responsibility: Optimized API performance and improved data exchange efficiency"
             ]
-          }
-        ]
-      },
-      {
-        "section": "Work Experience",
-        "fields": [
+          },
           { 
             "name": "Company Name", 
             "value": "Apple",
@@ -273,10 +292,10 @@ export async function POST(req: Request) {
                 };
               });
               
-              // 🎯 特殊处理：如果字段名是 "Company Name" 且有实际值，用实际值替换字段名
+              // 🎯 特殊处理：如果字段名是 "Company Name" 或 "University Name" 且有实际值，用实际值替换字段名
               let fieldName = field.name || 'Unnamed Field';
-              if (fieldName === 'Company Name' && field.value) {
-                fieldName = field.value; // 用实际公司名替换默认字段名
+              if ((fieldName === 'Company Name' || fieldName === 'University Name') && field.value) {
+                fieldName = field.value; // 用实际名称替换默认字段名
               }
               
               return {
@@ -299,10 +318,10 @@ export async function POST(req: Request) {
             id: 'section-0',
             title: data.section || data.title || 'Main Section',
             fields: (data.fields || []).map((field: any, fieldIndex: number) => {
-              // 🎯 特殊处理：如果字段名是 "Company Name" 且有实际值，用实际值替换字段名
+              // 🎯 特殊处理：如果字段名是 "Company Name" 或 "University Name" 且有实际值，用实际值替换字段名
               let fieldName = field.name || 'Unnamed Field';
-              if (fieldName === 'Company Name' && field.value) {
-                fieldName = field.value; // 用实际公司名替换默认字段名
+              if ((fieldName === 'Company Name' || fieldName === 'University Name') && field.value) {
+                fieldName = field.value; // 用实际名称替换默认字段名
               }
               
               return {

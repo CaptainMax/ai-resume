@@ -1,16 +1,7 @@
 import { NextResponse } from "next/server";
 import { openai } from "../openai-client";
 
-// TODO: 导入新的AI Agent架构组件
-// import { ReasoningEngine } from "../../reasoning/reasoningEngine";
-// import { PlanGenerator } from "../../reasoning/planGenerator";
-// import { ContextMemory } from "../../reasoning/contextMemory";
-// import { AgentRegistry } from "../../agentsOrchestrator/agentRegistry";
-// import { AgentRouter } from "../../agentsOrchestrator/agentRouter";
-// import { AgentOrchestrator } from "../../agentsOrchestrator/agentOrchestrator";
-// import { FeedbackLogger } from "../../feedback/feedbackLogger";
-// import { PromptMonitor } from "../../feedback/promptMonitor";
-// import { AutoTuner } from "../../feedback/autoTuner";
+// 注意：AI聊天功能现在使用 LLMReasoningEngine
 
 export async function POST(req: Request) {
   try {
@@ -23,23 +14,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing message" }, { status: 400 });
     }
 
-    // TODO: 集成新的AI Agent架构
-    // 1. 初始化组件
-    // const contextMemory = new ContextMemory();
-    // const reasoningEngine = new ReasoningEngine(contextMemory);
-    // const planGenerator = new PlanGenerator(reasoningEngine);
-    // const agentRegistry = new AgentRegistry();
-    // const agentRouter = new AgentRouter(agentRegistry);
-    // const agentOrchestrator = new AgentOrchestrator(agentRegistry, agentRouter, contextMemory);
-    // const feedbackLogger = new FeedbackLogger();
-    // const promptMonitor = new PromptMonitor(feedbackLogger);
-    // const autoTuner = new AutoTuner(promptMonitor, feedbackLogger);
-
-    // 2. 分析用户意图
-    // const userIntent = await reasoningEngine.analyzeUserIntent(message, context);
-    
-    // 3. 分类任务
-    // const taskClassification = await reasoningEngine.classifyTask(userIntent);
+    // 注意：现在使用 LLMReasoningEngine 进行智能推理
     
     // 4. 生成执行计划
     // const executionPlan = await planGenerator.generatePlan({

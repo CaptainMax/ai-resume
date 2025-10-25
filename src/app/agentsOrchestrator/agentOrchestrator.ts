@@ -1,463 +1,413 @@
 // src/app/agentsOrchestrator/agentOrchestrator.ts
-// 🎭 Agent编排器 - 管理多Agent执行流程
+// 🎯 Agent编排器 - 智能协调多个AI Agent的执行
 
-export interface ExecutionContext {
-  sessionId: string;
+import { AgentRegistry } from './agentRegistry';
+import { AgentRouter } from './agentRouter';
+import { ExecutionPlanner } from './executionPlanner';
+import { TaskExecutor } from './taskExecutor';
+import { ResultAggregator } from './resultAggregator';
+
+export interface OrchestrationRequest {
+  userInput: string;
+  context: any;
   userId: string;
-  userIntent: any;
-  taskClassification: any;
-  routingDecision: any;
-  executionPlan: any;
-  currentStep: number;
-  results: Map<string, any>;
-  errors: Map<string, string>;
-  startTime: Date;
-  metadata: Record<string, any>;
-}
-
-export interface ExecutionStatus {
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-  currentStep: string;
-  progress: number; // 0-100
-  estimatedTimeRemaining: number;
-  error?: string;
-  results?: any;
+  priority?: 'low' | 'medium' | 'high';
+  timeout?: number;
 }
 
 export interface OrchestrationResult {
   success: boolean;
-  data?: any;
+  result?: any;
   error?: string;
   executionTime: number;
-  stepsExecuted: string[];
-  agentResults: Map<string, any>;
-  metadata: {
-    sessionId: string;
-    userId: string;
-    timestamp: Date;
-    totalSteps: number;
-    successfulSteps: number;
-    failedSteps: number;
-  };
+  agentsUsed: string[];
+  confidence: number;
+  suggestions?: string[];
+  planId?: string;
 }
 
 export class AgentOrchestrator {
-  private agentRegistry: any; // TODO: 集成 agentRegistry
-  private agentRouter: any; // TODO: 集成 agentRouter
-  private contextMemory: any; // TODO: 集成 contextMemory
-  private activeExecutions: Map<string, ExecutionContext> = new Map();
-  private executionHistory: Map<string, OrchestrationResult> = new Map();
+  private agentRegistry: AgentRegistry;
+  private agentRouter: AgentRouter;
+  private executionPlanner: ExecutionPlanner;
+  private taskExecutor: TaskExecutor;
+  private resultAggregator: ResultAggregator;
+  private executionHistory: Map<string, OrchestrationResult[]> = new Map();
 
-  constructor(agentRegistry: any, agentRouter: any, contextMemory: any) {
-    this.agentRegistry = agentRegistry;
-    this.agentRouter = agentRouter;
-    this.contextMemory = contextMemory;
+  constructor() {
+    this.agentRegistry = new AgentRegistry();
+    this.agentRouter = new AgentRouter(this.agentRegistry);
+    this.executionPlanner = new ExecutionPlanner(this.agentRegistry);
+    this.taskExecutor = new TaskExecutor(this.agentRegistry);
+    this.resultAggregator = new ResultAggregator();
+    console.log("🎯 AgentOrchestrator initialized with full orchestration capabilities");
   }
 
   /**
-   * 编排执行任务
-   * @param sessionId 会话ID
-   * @param userId 用户ID
-   * @param userIntent 用户意图
-   * @param taskClassification 任务分类
-   * @param executionPlan 执行计划
-   * @returns 编排结果
+   * 🚀 执行编排请求
    */
-  async orchestrateExecution(
-    sessionId: string,
-    userId: string,
-    userIntent: any,
-    taskClassification: any,
-    executionPlan: any
-  ): Promise<OrchestrationResult> {
-    console.log('🎭 开始编排执行:', { sessionId, userId, userIntent, taskClassification });
-    
-    const startTime = new Date();
-    
-    // 创建执行上下文
-    const context: ExecutionContext = {
-      sessionId,
-      userId,
-      userIntent,
-      taskClassification,
-      routingDecision: null,
-      executionPlan,
-      currentStep: 0,
-      results: new Map(),
-      errors: new Map(),
-      startTime,
-      metadata: {}
-    };
-    
-    // 注册活跃执行
-    this.activeExecutions.set(sessionId, context);
-    
+  async executeRequest(request: OrchestrationRequest): Promise<OrchestrationResult> {
+    const startTime = Date.now();
+    console.log("🎯 执行编排请求:", request.userInput);
+
     try {
-      // 执行路由决策
-      const routingDecision = await this.agentRouter.routeTask({
-        userIntent,
-        taskClassification,
-        availableAgents: this.agentRegistry.getActiveAgents().map((a: any) => a.id),
-        userPreferences: await this.contextMemory.getUserPreferences(userId),
-        sessionHistory: this.contextMemory.getConversationHistory(),
-        currentResume: null // TODO: 获取当前简历
-      });
-      
-      context.routingDecision = routingDecision;
-      
-      // 验证路由决策
-      const isValid = await this.agentRouter.validateRoutingDecision(routingDecision, {
-        userIntent,
-        taskClassification,
-        availableAgents: this.agentRegistry.getActiveAgents().map((a: any) => a.id),
-        userPreferences: await this.contextMemory.getUserPreferences(userId),
-        sessionHistory: this.contextMemory.getConversationHistory(),
-        currentResume: null
-      });
-      
-      if (!isValid) {
-        throw new Error('路由决策验证失败');
+      // 1. 分析任务复杂度
+      const complexity = this.analyzeComplexity(request.userInput, request.context);
+      console.log("📊 任务复杂度:", complexity);
+
+      // 2. 根据复杂度选择执行策略
+      if (complexity === 'simple') {
+        return await this.executeSimpleTask(request, startTime);
+      } else {
+        return await this.executeComplexTask(request, startTime);
       }
-      
-      // 执行计划步骤
-      const result = await this.executePlan(context);
-      
-      // 记录执行历史
-      this.executionHistory.set(sessionId, result);
-      
-      return result;
+
     } catch (error) {
-      console.error('❌ 编排执行失败:', error);
+      const executionTime = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
       
-      const errorResult: OrchestrationResult = {
+      console.error("❌ 编排执行失败:", errorMessage);
+
+      return {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
-        executionTime: Date.now() - startTime.getTime(),
-        stepsExecuted: [],
-        agentResults: new Map(),
-        metadata: {
-          sessionId,
-          userId,
-          timestamp: new Date(),
-          totalSteps: executionPlan.steps.length,
-          successfulSteps: 0,
-          failedSteps: executionPlan.steps.length
-        }
+        error: errorMessage,
+        executionTime,
+        agentsUsed: ['none'],
+        confidence: 0
       };
-      
-      this.executionHistory.set(sessionId, errorResult);
-      return errorResult;
-    } finally {
-      // 清理活跃执行
-      this.activeExecutions.delete(sessionId);
     }
   }
 
   /**
-   * 执行计划步骤
+   * ⚡ 执行简单任务
    */
-  private async executePlan(context: ExecutionContext): Promise<OrchestrationResult> {
-    const { executionPlan, routingDecision } = context;
-    const agentResults = new Map();
-    const stepsExecuted: string[] = [];
-    let successfulSteps = 0;
-    let failedSteps = 0;
+  private async executeSimpleTask(
+    request: OrchestrationRequest, 
+    startTime: number
+  ): Promise<OrchestrationResult> {
+    console.log("⚡ 执行简单任务");
+
+    // 直接使用单个Agent
+    const routingDecision = await this.agentRouter.routeTask({
+      userIntent: request.userInput,
+      taskClassification: { complexity: 'simple' },
+      availableAgents: this.agentRegistry.getActiveAgents().map((a: any) => a.id),
+      userPreferences: {},
+      sessionHistory: [],
+      currentResume: request.context
+    });
     
-    console.log('📋 执行计划步骤:', executionPlan.steps);
-    
-    // 按顺序执行步骤
-    for (let i = 0; i < executionPlan.steps.length; i++) {
-      const step = executionPlan.steps[i];
-      context.currentStep = i;
-      
-      try {
-        console.log(`🔄 执行步骤 ${i + 1}/${executionPlan.steps.length}:`, step.name);
-        
-        // 检查依赖
-        if (!this.checkDependencies(step, agentResults)) {
-          throw new Error(`步骤 ${step.name} 的依赖未满足`);
-        }
-        
-        // 执行Agent
-        const agentResult = await this.executeAgent(step, context);
-        
-        if (agentResult.success) {
-          agentResults.set(step.id, agentResult.data);
-          stepsExecuted.push(step.id);
-          successfulSteps++;
-          console.log(`✅ 步骤 ${step.name} 执行成功`);
-        } else {
-          throw new Error(agentResult.error || `步骤 ${step.name} 执行失败`);
-        }
-        
-      } catch (error) {
-        console.error(`❌ 步骤 ${step.name} 执行失败:`, error);
-        
-        // 记录错误
-        context.errors.set(step.id, error instanceof Error ? error.message : String(error));
-        failedSteps++;
-        
-        // 检查是否有重试策略
-        if (step.retryPolicy && step.retryPolicy.maxRetries > 0) {
-          console.log(`🔄 尝试重试步骤 ${step.name}`);
-          
-          // TODO: 实现重试逻辑
-          // 这里可以添加重试机制
-        }
-        
-        // 检查是否有备用计划
-        if (executionPlan.fallbackPlan && failedSteps > 0) {
-          console.log('🔄 执行备用计划');
-          return await this.executeFallbackPlan(context, executionPlan.fallbackPlan);
-        }
-        
-        // 如果关键步骤失败，停止执行
-        if (this.isCriticalStep(step)) {
-          throw error;
-        }
-      }
+    const selectedAgent = this.agentRegistry.getAgent(routingDecision.primaryAgent);
+    if (!selectedAgent) {
+      throw new Error(`Agent not found: ${routingDecision.primaryAgent}`);
     }
     
-    // 构建最终结果
-    const executionTime = Date.now() - context.startTime.getTime();
-    const finalResult = this.buildFinalResult(context, agentResults, stepsExecuted, successfulSteps, failedSteps, executionTime);
-    
-    console.log('🎉 计划执行完成:', finalResult);
-    return finalResult;
-  }
+    const result = await this.executeWithAgent(selectedAgent, request);
 
-  /**
-   * 执行单个Agent
-   */
-  private async executeAgent(step: any, context: ExecutionContext): Promise<any> {
-    const agentId = step.agent;
-    const parameters = {
-      ...step.parameters,
-      context: {
-        sessionId: context.sessionId,
-        userId: context.userId,
-        userIntent: context.userIntent,
-        previousResults: Object.fromEntries(context.results)
-      }
+    const executionTime = Date.now() - startTime;
+    this.recordExecution(request.userId, {
+      success: true,
+      result: result,
+      executionTime,
+      agentsUsed: [selectedAgent.id],
+      confidence: result.confidence || 0.8
+    });
+
+    return {
+      success: true,
+      result: result,
+      executionTime,
+      agentsUsed: [selectedAgent.id],
+      confidence: result.confidence || 0.8,
+      suggestions: this.generateSuggestions(result)
     };
-    
-    console.log(`🤖 执行Agent ${agentId}:`, parameters);
-    
-    // 执行Agent
-    const result = await this.agentRegistry.executeAgent(agentId, parameters);
-    
-    // 记录结果
-    context.results.set(step.id, result);
-    
+  }
+
+  /**
+   * 🎯 执行复杂任务
+   */
+  private async executeComplexTask(
+    request: OrchestrationRequest, 
+    startTime: number
+  ): Promise<OrchestrationResult> {
+    console.log("🎯 执行复杂任务");
+
+    // 1. 创建执行计划
+    const availableAgents = this.agentRegistry.getActiveAgents();
+    const plan = this.executionPlanner.createExecutionPlan(
+      request.userInput,
+      request.context,
+      availableAgents
+    );
+
+    console.log("📋 执行计划创建完成:", this.executionPlanner.getPlanStats(plan));
+
+    // 2. 执行任务计划
+    const executionStatus = await this.taskExecutor.executePlan(plan);
+    console.log("🚀 任务执行完成:", executionStatus.status);
+
+    // 3. 聚合结果
+    const aggregatedResult = this.resultAggregator.aggregateResults(
+      executionStatus,
+      executionStatus.results
+    );
+
+    const executionTime = Date.now() - startTime;
+    const agentsUsed = executionStatus.results.map(r => r.stepId);
+
+    // 4. 记录执行历史
+    const result: OrchestrationResult = {
+      success: aggregatedResult.success,
+      result: aggregatedResult.data,
+      error: aggregatedResult.errors.join('; '),
+      executionTime,
+      agentsUsed,
+      confidence: aggregatedResult.success ? 0.9 : 0.3,
+      suggestions: this.generateComplexSuggestions(aggregatedResult),
+      planId: plan.id
+    };
+
+    this.recordExecution(request.userId, result);
+
     return result;
   }
 
   /**
-   * 检查步骤依赖
+   * 📊 分析任务复杂度
    */
-  private checkDependencies(step: any, agentResults: Map<string, any>): boolean {
-    if (!step.dependencies || step.dependencies.length === 0) {
-      return true;
+  private analyzeComplexity(userInput: string, context: any): 'simple' | 'medium' | 'complex' {
+    const input = userInput.toLowerCase();
+    
+    // 复杂任务关键词
+    const complexKeywords = [
+      'optimize', 'improve', 'enhance', 'restructure', 'reorganize',
+      'optimize resume', 'improve content', 'enhance format',
+      'bulk edit', 'batch process', 'multiple',
+      '优化', '改进', '增强', '重构', '重组',
+      '优化简历', '改进内容', '增强格式', '批量编辑'
+    ];
+    
+    // 简单任务关键词
+    const simpleKeywords = [
+      'edit', 'delete', 'add', 'update', 'modify',
+      '编辑', '删除', '添加', '更新', '修改'
+    ];
+    
+    if (complexKeywords.some(keyword => input.includes(keyword))) {
+      return 'complex';
     }
     
-    for (const dependency of step.dependencies) {
-      if (!agentResults.has(dependency)) {
-        console.warn(`⚠️ 依赖 ${dependency} 未满足`);
-        return false;
+    if (simpleKeywords.some(keyword => input.includes(keyword))) {
+      return 'simple';
+    }
+    
+    return 'medium';
+  }
+
+  /**
+   * 🤖 使用指定Agent执行任务
+   */
+  private async executeWithAgent(agent: any, request: OrchestrationRequest): Promise<any> {
+    console.log("🤖 使用Agent执行:", agent.id);
+
+    switch (agent.id) {
+      case 'llmReasoningEngine':
+        return await this.executeLLMReasoning(request);
+      
+      case 'parseResumeAgent':
+        return await this.executeParseResume(request);
+      
+      case 'contentOptimizer':
+        return await this.executeContentOptimization(request);
+      
+      default:
+        throw new Error(`Unknown agent: ${agent.id}`);
+    }
+  }
+
+  /**
+   * 🧠 执行LLM推理
+   */
+  private async executeLLMReasoning(request: OrchestrationRequest): Promise<any> {
+    const response = await fetch('/api/llm-reasoning', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userInput: request.userInput,
+        currentResume: request.context,
+        userId: request.userId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`LLM推理失败: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * 📄 执行简历解析
+   */
+  private async executeParseResume(request: OrchestrationRequest): Promise<any> {
+    const response = await fetch('/api/parseResume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request.context)
+    });
+
+    if (!response.ok) {
+      throw new Error(`简历解析失败: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * ⚡ 执行内容优化
+   */
+  private async executeContentOptimization(request: OrchestrationRequest): Promise<any> {
+    // 内容优化通常通过LLM推理引擎实现
+    return await this.executeLLMReasoning(request);
+  }
+
+  /**
+   * 📝 记录执行历史
+   */
+  private recordExecution(userId: string, result: OrchestrationResult): void {
+    if (!this.executionHistory.has(userId)) {
+      this.executionHistory.set(userId, []);
+    }
+    
+    const history = this.executionHistory.get(userId)!;
+    history.push(result);
+    
+    // 保持历史记录在合理范围内
+    if (history.length > 100) {
+      history.splice(0, history.length - 100);
+    }
+  }
+
+  /**
+   * 💡 生成简单任务建议
+   */
+  private generateSuggestions(result: any): string[] {
+    const suggestions: string[] = [];
+    
+    if (result && result.data) {
+      suggestions.push("操作已成功完成");
+      
+      if (result.data.sections && result.data.sections.length > 0) {
+        suggestions.push(`处理了 ${result.data.sections.length} 个sections`);
       }
     }
     
-    return true;
+    return suggestions;
   }
 
   /**
-   * 检查是否为关键步骤
+   * 💡 生成复杂任务建议
    */
-  private isCriticalStep(step: any): boolean {
-    // TODO: 实现关键步骤判断逻辑
-    // 某些步骤失败会导致整个任务失败
-    return step.name.includes('validate') || step.name.includes('parse');
-  }
-
-  /**
-   * 执行备用计划
-   */
-  private async executeFallbackPlan(context: ExecutionContext, fallbackPlan: any): Promise<OrchestrationResult> {
-    console.log('🔄 执行备用计划:', fallbackPlan);
+  private generateComplexSuggestions(aggregatedResult: any): string[] {
+    const suggestions: string[] = [];
     
-    // 更新执行计划
-    context.executionPlan = fallbackPlan;
-    context.currentStep = 0;
-    
-    // 重新执行
-    return await this.executePlan(context);
-  }
-
-  /**
-   * 构建最终结果
-   */
-  private buildFinalResult(
-    context: ExecutionContext,
-    agentResults: Map<string, any>,
-    stepsExecuted: string[],
-    successfulSteps: number,
-    failedSteps: number,
-    executionTime: number
-  ): OrchestrationResult {
-    const success = failedSteps === 0;
-    
-    return {
-      success,
-      data: success ? this.aggregateResults(agentResults) : null,
-      error: success ? undefined : `执行失败，${failedSteps} 个步骤失败`,
-      executionTime,
-      stepsExecuted,
-      agentResults,
-      metadata: {
-        sessionId: context.sessionId,
-        userId: context.userId,
-        timestamp: new Date(),
-        totalSteps: context.executionPlan.steps.length,
-        successfulSteps,
-        failedSteps
+    if (aggregatedResult.success) {
+      suggestions.push("复杂任务执行完成");
+      
+      if (aggregatedResult.agentResults) {
+        const agentCount = Object.keys(aggregatedResult.agentResults).length;
+        suggestions.push(`使用了 ${agentCount} 个AI Agent`);
       }
-    };
-  }
-
-  /**
-   * 聚合结果
-   */
-  private aggregateResults(agentResults: Map<string, any>): any {
-    // TODO: 实现结果聚合逻辑
-    // 将多个Agent的结果合并为最终结果
-    
-    const results = Object.fromEntries(agentResults);
-    
-    // 简单的聚合策略
-    if (results.parse_content) {
-      return results.parse_content;
-    }
-    
-    if (results.analyze_structure) {
-      return results.analyze_structure;
-    }
-    
-    if (results.improve_content) {
-      return results.improve_content;
-    }
-    
-    return results;
-  }
-
-  /**
-   * 获取执行状态
-   * @param sessionId 会话ID
-   * @returns 执行状态
-   */
-  getExecutionStatus(sessionId: string): ExecutionStatus | null {
-    const context = this.activeExecutions.get(sessionId);
-    if (!context) {
-      return null;
-    }
-    
-    const totalSteps = context.executionPlan.steps.length;
-    const progress = (context.currentStep / totalSteps) * 100;
-    const estimatedTimeRemaining = this.estimateRemainingTime(context);
-    
-    return {
-      status: 'running',
-      currentStep: context.executionPlan.steps[context.currentStep]?.name || 'unknown',
-      progress,
-      estimatedTimeRemaining
-    };
-  }
-
-  /**
-   * 估算剩余时间
-   */
-  private estimateRemainingTime(context: ExecutionContext): number {
-    const remainingSteps = context.executionPlan.steps.slice(context.currentStep);
-    return remainingSteps.reduce((total, step) => total + step.estimatedTime, 0);
-  }
-
-  /**
-   * 取消执行
-   * @param sessionId 会话ID
-   * @returns 是否成功取消
-   */
-  async cancelExecution(sessionId: string): Promise<boolean> {
-    const context = this.activeExecutions.get(sessionId);
-    if (!context) {
-      return false;
-    }
-    
-    console.log('🛑 取消执行:', sessionId);
-    
-    // 清理活跃执行
-    this.activeExecutions.delete(sessionId);
-    
-    // 记录取消结果
-    const cancelResult: OrchestrationResult = {
-      success: false,
-      error: '用户取消执行',
-      executionTime: Date.now() - context.startTime.getTime(),
-      stepsExecuted: [],
-      agentResults: new Map(),
-      metadata: {
-        sessionId,
-        userId: context.userId,
-        timestamp: new Date(),
-        totalSteps: context.executionPlan.steps.length,
-        successfulSteps: context.currentStep,
-        failedSteps: 0
+      
+      if (aggregatedResult.warnings && aggregatedResult.warnings.length > 0) {
+        suggestions.push(`${aggregatedResult.warnings.length} 个冲突已自动解决`);
       }
-    };
+    } else {
+      suggestions.push("任务执行遇到问题");
+      
+      if (aggregatedResult.errors && aggregatedResult.errors.length > 0) {
+        suggestions.push(`发现 ${aggregatedResult.errors.length} 个错误`);
+      }
+    }
     
-    this.executionHistory.set(sessionId, cancelResult);
-    return true;
+    return suggestions;
   }
 
   /**
-   * 获取执行历史
-   * @param sessionId 会话ID
-   * @returns 执行历史
+   * 📊 获取执行统计
    */
-  getExecutionHistory(sessionId: string): OrchestrationResult | null {
-    return this.executionHistory.get(sessionId) || null;
-  }
-
-  /**
-   * 获取系统统计信息
-   * @returns 统计信息
-   */
-  getSystemStats(): any {
+  getExecutionStats(userId: string): {
+    totalExecutions: number;
+    successRate: number;
+    averageExecutionTime: number;
+    mostUsedAgents: string[];
+    complexTaskCount: number;
+  } {
+    const history = this.executionHistory.get(userId) || [];
+    
+    const totalExecutions = history.length;
+    const successfulExecutions = history.filter(h => h.success).length;
+    const successRate = totalExecutions > 0 ? (successfulExecutions / totalExecutions) * 100 : 0;
+    
+    const averageExecutionTime = totalExecutions > 0 
+      ? history.reduce((sum, h) => sum + h.executionTime, 0) / totalExecutions 
+      : 0;
+    
+    const agentUsage = new Map<string, number>();
+    history.forEach(h => {
+      h.agentsUsed.forEach(agent => {
+        agentUsage.set(agent, (agentUsage.get(agent) || 0) + 1);
+      });
+    });
+    
+    const mostUsedAgents = Array.from(agentUsage.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([agent]) => agent);
+    
+    const complexTaskCount = history.filter(h => h.planId).length;
+    
     return {
-      activeExecutions: this.activeExecutions.size,
-      totalExecutions: this.executionHistory.size,
-      successRate: this.calculateSuccessRate(),
-      averageExecutionTime: this.calculateAverageExecutionTime()
+      totalExecutions,
+      successRate,
+      averageExecutionTime,
+      mostUsedAgents,
+      complexTaskCount
     };
   }
 
   /**
-   * 计算成功率
+   * 🧹 清理历史记录
    */
-  private calculateSuccessRate(): number {
-    const results = Array.from(this.executionHistory.values());
-    if (results.length === 0) return 0;
-    
-    const successful = results.filter(r => r.success).length;
-    return successful / results.length;
+  cleanupHistory(): void {
+    this.executionHistory.clear();
+    this.taskExecutor.cleanupCompletedExecutions();
+    console.log("🧹 执行历史已清理");
   }
 
   /**
-   * 计算平均执行时间
+   * 📊 获取系统状态
    */
-  private calculateAverageExecutionTime(): number {
-    const results = Array.from(this.executionHistory.values());
-    if (results.length === 0) return 0;
+  getSystemStatus(): {
+    activeAgents: number;
+    activeExecutions: number;
+    systemHealth: 'healthy' | 'degraded' | 'unhealthy';
+  } {
+    const activeAgents = this.agentRegistry.getActiveAgents().length;
+    const activeExecutions = this.taskExecutor['activeExecutions'].size;
     
-    const totalTime = results.reduce((sum, r) => sum + r.executionTime, 0);
-    return totalTime / results.length;
+    let systemHealth: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+    if (activeAgents < 2) {
+      systemHealth = 'degraded';
+    }
+    if (activeAgents === 0) {
+      systemHealth = 'unhealthy';
+    }
+    
+    return {
+      activeAgents,
+      activeExecutions,
+      systemHealth
+    };
   }
 }

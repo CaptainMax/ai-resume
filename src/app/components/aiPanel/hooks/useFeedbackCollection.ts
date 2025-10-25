@@ -163,6 +163,39 @@ export function useFeedbackCollection() {
     console.log('🔄 反馈收集已重置');
   }, []);
 
+  // 🎯 收集推理引擎反馈
+  const collectFeedback = useCallback(async (feedback: {
+    reasoning: any;
+    satisfaction?: number;
+    accuracy?: number;
+    success?: boolean;
+    userCorrection?: any;
+  }) => {
+    try {
+      const response = await fetch('/api/llm-reasoning/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: 'user-123',
+          ...feedback
+        }),
+      });
+
+      if (response.ok) {
+        console.log('✅ 推理反馈收集成功');
+        return true;
+      } else {
+        console.error('❌ 推理反馈收集失败:', response.status);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ 推理反馈收集错误:', error);
+      return false;
+    }
+  }, []);
+
   return {
     recordOriginalData,
     recordFieldEdit,
@@ -173,6 +206,7 @@ export function useFeedbackCollection() {
     getFeedbackData,
     sendFeedback,
     resetFeedback,
+    collectFeedback,
     hasCorrections: corrections.current.length > 0
   };
 }

@@ -6,12 +6,14 @@ export default function ChatInput({
   onSend, 
   isLoading = false, 
   onShowLearningInsights,
-  onShowConfidenceEvolution
+  onShowConfidenceEvolution,
+  onShowOrchestratorStatus
 }: { 
   onSend: (msg: string) => void; 
   isLoading?: boolean;
   onShowLearningInsights?: () => void;
   onShowConfidenceEvolution?: () => void;
+  onShowOrchestratorStatus?: () => void;
 }) {
   const [input, setInput] = useState("");
   const ref = useRef<HTMLTextAreaElement | null>(null);
@@ -61,6 +63,14 @@ export default function ChatInput({
           >
             <span>🎯</span>
             <span>置信度进化</span>
+          </button>
+          
+          <button
+            onClick={onShowOrchestratorStatus}
+            className="px-3 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
+          >
+            <span>🎭</span>
+            <span>编排器状态</span>
           </button>
         </div>
         
