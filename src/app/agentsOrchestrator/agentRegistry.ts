@@ -50,7 +50,7 @@ export class AgentRegistry {
   private agentInstances: Map<string, any> = new Map();
 
   constructor() {
-    this.initializeDefaultAgents();
+    this.initializeDefaultAgents().catch(console.error);
   }
 
   /**
@@ -225,7 +225,7 @@ export class AgentRegistry {
   /**
    * 初始化默认Agent
    */
-  private initializeDefaultAgents(): void {
+  private async initializeDefaultAgents(): Promise<void> {
     console.log('🔧 初始化默认Agent');
     
     // 注册简历解析Agent
@@ -268,7 +268,7 @@ export class AgentRegistry {
         createdAt: new Date(),
         updatedAt: new Date()
       }
-    }, null); // TODO: 实际的Agent实例
+    }, new (await import('@/app/agents/parseResumeAgent')).ParseResumeAgent());
 
     // 注册简历分析Agent
     this.registerAgent({
@@ -310,7 +310,7 @@ export class AgentRegistry {
         createdAt: new Date(),
         updatedAt: new Date()
       }
-    }, null); // TODO: 实际的Agent实例
+    }, new (await import('@/app/agents/analyzeResumeAgent')).AnalyzeResumeAgent());
 
     // 注册简历改进Agent
     this.registerAgent({
@@ -352,7 +352,7 @@ export class AgentRegistry {
         createdAt: new Date(),
         updatedAt: new Date()
       }
-    }, null); // TODO: 实际的Agent实例
+    }, new (await import('@/app/agents/improveResumeAgent')).ImproveResumeAgent());
 
     // 注册简历总结Agent
     this.registerAgent({
@@ -385,7 +385,40 @@ export class AgentRegistry {
         createdAt: new Date(),
         updatedAt: new Date()
       }
-    }, null); // TODO: 实际的Agent实例
+    }, new (await import('@/app/agents/summarizeResumeAgent')).SummarizeResumeAgent());
+
+    // 注册简历修改Agent
+    this.registerAgent({
+      id: 'resumeModifierAgent',
+      name: 'Resume Modifier',
+      version: '1.0.0',
+      status: 'active',
+      capabilities: [
+        {
+          name: 'modify',
+          description: '修改简历内容和结构',
+          inputTypes: ['json'],
+          outputTypes: ['json'],
+          parameters: { action: 'add|edit|remove' },
+          estimatedTime: 2,
+          complexity: 'medium'
+        }
+      ],
+      dependencies: [],
+      health: {
+        isHealthy: true,
+        lastCheck: new Date(),
+        errorCount: 0,
+        successRate: 1.0
+      },
+      metadata: {
+        author: 'ResumeVision Team',
+        description: '智能简历修改Agent',
+        tags: ['modification', 'editing', 'updating'],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    }, new (await import('@/app/agents/resumeModifierAgent')).ResumeModifierAgent());
   }
 
   /**

@@ -220,6 +220,9 @@ export class TaskExecutor {
       case 'actionExecutor':
         return await this.invokeActionExecutor(input);
       
+      case 'resumeModifierAgent':
+        return await this.invokeResumeModifierAgent(input);
+      
       default:
         // 通用Agent调用
         if (agent.execute) {
@@ -234,7 +237,9 @@ export class TaskExecutor {
    * 🧠 调用LLM推理引擎
    */
   private async invokeLLMReasoningEngine(input: any): Promise<any> {
-    const response = await fetch('/api/llm-reasoning', {
+    // 使用绝对URL避免相对路径问题
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/llm-reasoning`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input)
@@ -251,10 +256,18 @@ export class TaskExecutor {
    * 📄 调用简历解析Agent
    */
   private async invokeParseResumeAgent(input: any): Promise<any> {
-    const response = await fetch('/api/parseResume', {
+    // 使用绝对URL避免相对路径问题
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    
+    // 构造API期望的参数格式
+    const apiParams = {
+      resumeText: input.resumeText || input.userInput || "Sample resume text for parsing"
+    };
+    
+    const response = await fetch(`${baseUrl}/api/parseResume`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input)
+      body: JSON.stringify(apiParams)
     });
 
     if (!response.ok) {
@@ -270,6 +283,32 @@ export class TaskExecutor {
   private async invokeActionExecutor(input: any): Promise<any> {
     // ActionExecutor通常通过LLM推理引擎调用
     return await this.invokeLLMReasoningEngine(input);
+  }
+
+  /**
+   * 🔧 调用简历修改Agent
+   */
+  private async invokeResumeModifierAgent(input: any): Promise<any> {
+    console.log('🔧 调用ResumeModifierAgent:', input);
+    
+    // 构造ResumeModifierAgent需要的参数
+    const parameters = {
+      action: input.action || 'add',
+      target: input.target || 'section',
+      entity: input.entity || 'education',
+      data: input.data || {},
+      sections: input.context?.sections || []
+    };
+    
+    console.log('🔧 ResumeModifierAgent参数:', parameters);
+    
+    // 直接调用Agent实例
+    const agentInstance = this.agentRegistry.getAgentInstance('resumeModifierAgent');
+    if (!agentInstance) {
+      throw new Error('ResumeModifierAgent实例不存在');
+    }
+    
+    return await agentInstance.execute(parameters);
   }
 
   /**

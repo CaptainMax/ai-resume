@@ -4,6 +4,7 @@
 import { useStructuredActions } from "./useStructuredActions";
 import { useRewriteHandler } from "./useRewriteHandler";
 import { useLanguageDetection } from "./useLanguageDetection";
+import { useResumeStore } from "@/app/store/useResumeStore";
 import { ResumeSection } from "@/app/store/types";
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
@@ -12,6 +13,7 @@ export function useAiChat() {
   const { handleStructuredAction } = useStructuredActions();
   const { handleRewriteResponse } = useRewriteHandler();
   const { shouldUseEnglish } = useLanguageDetection();
+  const { setSections } = useResumeStore();
 
   const handleSend = async (
     msg: string,
@@ -83,6 +85,20 @@ export function useAiChat() {
       const data = await res.json();
       
       if (data.success) {
+        // 检查是否有updatedResume（新的AI Agent响应）
+        if (data.updatedResume) {
+          console.log("🔄 收到AI Agent更新的简历数据:", data.updatedResume);
+          setSections(data.updatedResume);
+          setShowUndoPrompt(true);
+          
+          const message = data.response || "✅ AI已根据您的指令进行了修改。请确认是否保留。";
+          setMessages((m) => [
+            ...m,
+            { role: "assistant", content: message },
+          ]);
+          return;
+        }
+        
         // 检查是否是结构化操作
         if (data.action && data.data) {
           await handleStructuredAction(data.action, data.data);

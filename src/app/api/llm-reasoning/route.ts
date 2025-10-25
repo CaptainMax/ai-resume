@@ -10,7 +10,7 @@ const llmReasoningEngine = new LLMReasoningEngine();
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userInput, currentResume, userId = 'default' } = body;
+    const { userInput, context, action, currentResume, userId = 'default' } = body;
 
     if (!userInput) {
       return NextResponse.json({
@@ -19,25 +19,18 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log("🧠 开始LLM推理:", userInput);
+    console.log("🧠 开始LLM推理:", { userInput, action });
 
-    // 1. 使用 LLM 分析用户意图
-    const reasoning = await llmReasoningEngine.analyzeUserIntent(
-      userInput,
-      currentResume,
-      userId
-    );
+    // 统一使用意图分析 - 系统唯一的推理源头
+    const result = await llmReasoningEngine.analyzeIntent(userInput, context);
 
-    console.log("✅ LLM推理完成:", reasoning);
+    console.log("✅ LLM推理完成:", result);
 
     return NextResponse.json({
       success: true,
-      data: {
-        reasoning,
-        source: 'LLM-Function-Calling',
-        confidence: reasoning.confidence,
-        timestamp: new Date().toISOString()
-      }
+      data: result,
+      source: 'LLM-Function-Calling',
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {

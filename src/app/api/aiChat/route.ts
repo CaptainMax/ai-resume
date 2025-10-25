@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { openai } from "../openai-client";
 
-// 注意：AI聊天功能现在使用 LLMReasoningEngine
+// 🧠 推理驱动的AI聊天系统 - 集成Agent编排器
 
 export async function POST(req: Request) {
   try {
@@ -14,42 +14,83 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing message" }, { status: 400 });
     }
 
-    // 注意：现在使用 LLMReasoningEngine 进行智能推理
+    // 🧠 第一步：使用LLM分析用户意图
+    console.log("🧠 开始LLM意图分析:", message);
     
-    // 4. 生成执行计划
-    // const executionPlan = await planGenerator.generatePlan({
-    //   userIntent,
-    //   taskClassification,
-    //   availableAgents: agentRegistry.getActiveAgents().map(a => a.id),
-    //   userPreferences: await contextMemory.getUserPreferences(context?.userId),
-    //   sessionHistory: contextMemory.getConversationHistory()
-    // });
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const intentAnalysis = await fetch(`${baseUrl}/api/llm-reasoning/analyze_intent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userInput: message,
+        currentResume: context,
+        userId: context?.userId || 'default'
+      })
+    });
 
-    // 5. 执行编排
-    // const result = await agentOrchestrator.orchestrateExecution(
-    //   context?.sessionId || 'default',
-    //   context?.userId || 'anonymous',
-    //   userIntent,
-    //   taskClassification,
-    //   executionPlan
-    // );
+    const intentResult = await intentAnalysis.json();
+    console.log("✅ LLM意图分析完成:", intentResult);
 
-    // 6. 记录反馈
-    // await feedbackLogger.logAgentExecution(
-    //   context?.sessionId || 'default',
-    //   context?.userId || 'anonymous',
-    //   'aiChatAgent',
-    //   'chat',
-    //   { message, context },
-    //   result,
-    //   result.success,
-    //   result.executionTime,
-    //   { userIntent, taskClassification, routingDecision: null }
-    // );
+    // 🎯 第二步：检查是否需要Agent编排
+    if (intentResult.success && intentResult.confidence > 0.6) {
+      console.log("🎯 检测到高置信度意图，触发Agent编排:", intentResult.intent);
+      
+      try {
+        // 调用编排器执行Agent
+        const orchestratorResponse = await fetch(`${baseUrl}/api/orchestrator`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            intent: intentResult.intent,
+            entities: intentResult.entities,
+            context: context,
+            userId: context?.userId || 'default'
+          })
+        });
 
-    // 临时保持现有逻辑，直到新架构完全集成
+        const orchestratorResult = await orchestratorResponse.json();
+        console.log("🎯 编排器执行完成:", orchestratorResult);
 
-    // 构建系统提示词，包含上下文信息
+        // 优先检测 flat 结构，其次检测嵌套结构
+        if (orchestratorResult.success && orchestratorResult.updatedResume) {
+          console.log("✅ Resume updated:", orchestratorResult.updatedResume);
+          console.log("✅ Successfully sent updatedResume to frontend");
+          return NextResponse.json({
+            success: true,
+            response: orchestratorResult.message,
+            updatedResume: orchestratorResult.updatedResume,
+            action: {
+              type: 'agent_execution',
+              agent: intentResult.intent,
+              confidence: intentResult.confidence
+            }
+          });
+        } else if (orchestratorResult.success && orchestratorResult.data?.result?.updatedResume) {
+          console.log("✅ Resume updated (nested):", orchestratorResult.data.result.updatedResume);
+          console.log("✅ Successfully sent updatedResume to frontend");
+          return NextResponse.json({
+            success: true,
+            response: orchestratorResult.data.result.message,
+            updatedResume: orchestratorResult.data.result.updatedResume,
+            action: {
+              type: 'agent_execution',
+              agent: intentResult.intent,
+              confidence: intentResult.confidence
+            }
+          });
+        } else {
+          console.log("⚠️ 编排器成功但未返回updatedResume，继续普通聊天");
+        }
+      } catch (orchestratorError) {
+        console.error("❌ 编排器执行失败:", orchestratorError);
+        // 继续执行普通聊天逻辑
+      }
+    }
+
+    // 🗣️ 第三步：普通聊天对话（当意图置信度低或Agent执行失败时）
+    console.log("🗣️ 执行普通聊天对话");
+    
+    // 构建系统提示词
     let systemPrompt = `You are a helpful resume editing assistant. You can help users edit their resume content naturally, just like ChatGPT.
 
 You have access to the user's resume structure and can perform these actions:
@@ -106,13 +147,13 @@ For other requests, just respond normally with helpful text.`;
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o", // 使用更强的模型
+      model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message },
       ],
-      temperature: 0.3, // 降低随机性，提高稳定性
-      max_tokens: 2000, // 增加token限制
+      temperature: 0.3,
+      max_tokens: 2000,
       top_p: 0.9,
     });
 
@@ -164,19 +205,6 @@ For other requests, just respond normally with helpful text.`;
 
   } catch (err) {
     console.error("❌ AI聊天API错误:", err);
-    
-    // TODO: 记录错误到反馈系统
-    // await feedbackLogger.logAgentExecution(
-    //   context?.sessionId || 'default',
-    //   context?.userId || 'anonymous',
-    //   'aiChatAgent',
-    //   'chat',
-    //   { message, context },
-    //   { error: err instanceof Error ? err.message : String(err) },
-    //   false,
-    //   0,
-    //   { userIntent: null, taskClassification: null, routingDecision: null }
-    // );
     
     return NextResponse.json({ 
       success: false, 

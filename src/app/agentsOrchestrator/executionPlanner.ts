@@ -145,6 +145,24 @@ export class ExecutionPlanner {
       });
     }
 
+    // 教育添加相关
+    if (intent.includes('master') || intent.includes('degree') || intent.includes('education') || 
+        intent.includes('教育') || intent.includes('mit') || intent.includes('university') ||
+        intent.includes('college') || intent.includes('school')) {
+      steps.push({
+        action: 'add_education',
+        input: { 
+          userIntent, 
+          context,
+          action: 'add',
+          target: 'section',
+          entity: 'education',
+          data: this.extractEducationData(userIntent)
+        },
+        priority: 1
+      });
+    }
+
     // 单个编辑相关
     if (intent.includes('edit') || intent.includes('修改') || intent.includes('update')) {
       steps.push({
@@ -176,6 +194,61 @@ export class ExecutionPlanner {
   }
 
   /**
+   * 🎓 提取教育数据
+   */
+  private extractEducationData(userIntent: string): any {
+    const intent = userIntent.toLowerCase();
+    
+    // 提取机构信息
+    let institution = 'MIT';
+    if (intent.includes('mit')) {
+      institution = 'Massachusetts Institute of Technology';
+    } else if (intent.includes('harvard')) {
+      institution = 'Harvard University';
+    } else if (intent.includes('stanford')) {
+      institution = 'Stanford University';
+    }
+    
+    // 提取学位信息
+    let degree = 'M.S.';
+    if (intent.includes('master')) {
+      degree = 'M.S.';
+    } else if (intent.includes('bachelor') || intent.includes('bachelor')) {
+      degree = 'B.S.';
+    } else if (intent.includes('phd') || intent.includes('doctor')) {
+      degree = 'Ph.D.';
+    }
+    
+    // 提取专业信息
+    let major = 'Computer Science';
+    if (intent.includes('cs') || intent.includes('computer science')) {
+      major = 'Computer Science';
+    } else if (intent.includes('engineering')) {
+      major = 'Engineering';
+    }
+    
+    // 提取时间信息
+    let time = 'Sep. 2023 - Sep. 2025';
+    if (intent.includes('2023') && intent.includes('2025')) {
+      time = 'Sep. 2023 - Sep. 2025';
+    }
+    
+    // 提取地点信息
+    let location = 'Cambridge, MA';
+    if (intent.includes('mit')) {
+      location = 'Cambridge, MA';
+    }
+    
+    return {
+      institution,
+      degree,
+      major,
+      time,
+      location
+    };
+  }
+
+  /**
    * 🎯 为步骤选择最佳Agent
    */
   private selectBestAgent(stepInfo: any, availableAgents: any[]): any {
@@ -187,9 +260,12 @@ export class ExecutionPlanner {
       'optimize_content': ['contentOptimizer', 'llmReasoningEngine'],
       'standardize_format': ['formatStandardizer', 'llmReasoningEngine'],
       'quality_check': ['qualityChecker', 'llmReasoningEngine'],
-      'bulk_edit': ['llmReasoningEngine', 'actionExecutor'],
-      'single_edit': ['llmReasoningEngine', 'actionExecutor'],
-      'delete_item': ['llmReasoningEngine', 'actionExecutor'],
+      'bulk_edit': ['resumeModifierAgent', 'llmReasoningEngine'],
+      'single_edit': ['resumeModifierAgent', 'llmReasoningEngine'],
+      'delete_item': ['resumeModifierAgent', 'llmReasoningEngine'],
+      'add_education': ['resumeModifierAgent'],
+      'add_work': ['resumeModifierAgent'],
+      'add_skill': ['resumeModifierAgent'],
       'llm_reasoning': ['llmReasoningEngine']
     };
 

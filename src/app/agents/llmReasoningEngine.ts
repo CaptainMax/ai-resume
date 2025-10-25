@@ -74,12 +74,15 @@ const REASONING_FUNCTIONS = [
 ];
 
 export interface LLMReasoningResult {
+  intent: string;
+  entities: Record<string, any>;
   action: 'add' | 'edit' | 'delete' | 'move' | 'optimize' | 'replace';
   target: 'section' | 'field' | 'point' | 'content';
   entity: string;
   data: Record<string, any>;
   confidence: number;
   reasoning: string;
+  reasoningSteps: string[];
 }
 
 export class LLMReasoningEngine {
@@ -178,12 +181,15 @@ ${JSON.stringify(context, null, 2)}
       
       // 返回默认结果
       return {
+        intent: 'add_education',
+        entities: { section: 'Education' },
         action: 'add',
         target: 'field',
         entity: 'education',
         data: { section: 'Education' },
         confidence: 0.3,
-        reasoning: 'LLM推理失败，使用默认添加教育意图'
+        reasoning: 'LLM推理失败，使用默认添加教育意图',
+        reasoningSteps: ['LLM推理失败', '使用默认添加教育意图']
       };
     }
   }
@@ -514,5 +520,79 @@ ${JSON.stringify(context, null, 2)}
       this.userPreferences.clear();
     }
     console.log("🧹 上下文已清理");
+  }
+
+  /**
+   * 🧠 统一意图分析 - 系统唯一的推理源头
+   */
+  async analyzeIntent(userInput: string, context: any): Promise<any> {
+    console.log('🧠 开始统一意图分析:', userInput);
+    
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `你是一个智能简历助手，专门分析用户意图并提取结构化信息。
+
+你的任务是：
+1. 分析用户意图（intent）
+2. 提取相关实体（entities）
+3. 评估置信度（confidence）
+4. 提供推理步骤（reasoningSteps）
+
+可能的意图类型：
+- add_education: 添加教育经历
+- add_work_experience: 添加工作经验
+- add_skill: 添加技能
+- add_summary: 添加简历摘要/简介
+- delete_item: 删除项目
+- edit_item: 编辑项目
+- optimize_content: 优化内容
+
+返回JSON格式：
+{
+  "intent": "意图类型",
+  "entities": {
+    "相关实体字段": "值"
+  },
+  "confidence": 0.0-1.0,
+  "reasoningSteps": ["推理步骤1", "推理步骤2"]
+}`
+          },
+          {
+            role: "user",
+            content: `用户输入: "${userInput}"
+当前上下文: ${JSON.stringify(context, null, 2)}`
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" }
+      });
+
+      const response = completion.choices[0]?.message?.content;
+      if (!response) {
+        throw new Error('AI没有返回有效响应');
+      }
+
+      const reasoning = JSON.parse(response);
+      console.log('🧠 意图分析结果:', reasoning);
+      
+      return {
+        success: true,
+        intent: reasoning.intent,
+        entities: reasoning.entities || {},
+        confidence: reasoning.confidence || 0.5,
+        reasoningSteps: reasoning.reasoningSteps || []
+      };
+
+    } catch (error) {
+      console.error('❌ 意图分析失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '意图分析失败'
+      };
+    }
   }
 }

@@ -7,11 +7,13 @@ export default function ChatMessages({
   showUndoPrompt,
   onConfirmKeep,
   onUndoLastAction,
+  onFeedback,
 }: {
   messages: ChatMsg[];
   showUndoPrompt: boolean;
   onConfirmKeep: () => void;
   onUndoLastAction: () => void;
+  onFeedback?: (satisfaction: number) => void;
 }) {
   // 检查用户是否要求英文回复
   const shouldUseEnglish = () => {
@@ -39,6 +41,26 @@ export default function ChatMessages({
             {m.role === "assistant" ? "Assistant" : "You"}
           </div>
           {m.content}
+          
+          {/* 🎯 人类反馈按钮 - 仅对助手消息显示 */}
+          {m.role === "assistant" && onFeedback && (
+            <div className="mt-2 flex space-x-2">
+              <button
+                onClick={() => onFeedback(1.0)}
+                className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                title="👍 满意"
+              >
+                👍
+              </button>
+              <button
+                onClick={() => onFeedback(0.0)}
+                className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                title="👎 不满意"
+              >
+                👎
+              </button>
+            </div>
+          )}
         </div>
       ))}
       
