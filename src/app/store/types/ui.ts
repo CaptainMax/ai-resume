@@ -1,4 +1,4 @@
-import { SliceCreator } from './common';
+import { SliceCreator, ResumePoint } from './common';
 
 /** UI slice - 管理所有UI状态 */
 export interface UiSlice {
@@ -37,6 +37,10 @@ export interface UiSlice {
   
   lastAddedPointId: string | null; // 用于跟踪最后添加的point，以便进行undo
   setLastAddedPointId: (id: string | null) => void;
+  
+  // 删除操作undo支持
+  lastDeletedPoint: { sectionId: string; fieldId: string; pointId: string; point: ResumePoint } | null; // 用于跟踪最后删除的point，以便进行undo
+  setLastDeletedPoint: (point: { sectionId: string; fieldId: string; pointId: string; point: ResumePoint } | null) => void;
   
   // AI修改高亮状态
   aiModifiedPoints: Set<string>; // 存储被AI修改的point IDs

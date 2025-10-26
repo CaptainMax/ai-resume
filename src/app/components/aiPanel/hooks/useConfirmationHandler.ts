@@ -16,8 +16,11 @@ export function useConfirmationHandler() {
     setLastAddedPointId, 
     lastModifiedPoint, 
     setLastModifiedPoint, 
+    lastDeletedPoint,
+    setLastDeletedPoint,
     removeField, 
     removePoint,
+    addPoint,
     updatePoint,
     removeAiModifiedPoint,
     removeAiOriginalContent
@@ -139,9 +142,23 @@ export function useConfirmationHandler() {
       ]);
     }
     
+    // 处理撤销删除的point
+    if (lastDeletedPoint) {
+      const { sectionId, fieldId, pointId, point } = lastDeletedPoint;
+      addPoint(sectionId, fieldId, point);
+      const message = useEnglish
+        ? "↩️ Deleted point has been restored."
+        : "↩️ 已恢复被删除的内容。";
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: message },
+      ]);
+    }
+    
     setLastAddedFieldId(null); // 清除最后添加的field ID
     setLastAddedPointId(null); // 清除最后添加的point ID
     setLastModifiedPoint(null); // 清除最后修改的point信息
+    setLastDeletedPoint(null); // 清除最后删除的point信息
   };
 
   return { handleConfirmKeep, handleUndoLastAction };

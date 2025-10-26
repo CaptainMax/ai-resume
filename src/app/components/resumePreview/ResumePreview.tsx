@@ -5,6 +5,7 @@ import { useResumeStore } from "@/app/store/useResumeStore";
 import PreviewCard from "./PreviewCard";
 import InlineFieldEditor from "./InlineFiledEditor";
 import InlinePointEditor from "./InlinePointEditor";
+import SkillTag from "./SkillTag";
 import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { sectionKey, parseDragKey } from "@/app/lib/dnd";
@@ -117,16 +118,13 @@ export default function ResumePreview() {
                                 const pointId = typeof p === "string" ? `${f.id}-point-${j}` : p.id;
 
                                 return (
-                                  <div key={pointId} className="inline-flex">
-                                    <div className="bg-blue-50 border border-blue-200 rounded-full px-3 py-1 text-sm text-blue-800 hover:bg-blue-100 transition-colors">
-                                      <InlinePointEditor
-                                        sectionId={s.id}
-                                        fieldId={f.id}
-                                        pointId={pointId}
-                                        content={pointContent}
-                                      />
-                                    </div>
-                                  </div>
+                                  <SkillTag
+                                    key={pointId}
+                                    sectionId={s.id}
+                                    fieldId={f.id}
+                                    pointId={pointId}
+                                    content={pointContent}
+                                  />
                                 );
                               })}
                             </div>

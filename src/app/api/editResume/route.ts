@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sortFieldsBySectionType, shouldSortSection } from "../../utils/sortUtils";
 
 export async function POST(req: Request) {
   try {
@@ -36,11 +37,11 @@ export async function POST(req: Request) {
     let updatedResume = JSON.parse(JSON.stringify(resumeContext.resume));
 
     // 根据 AI 返回的动作执行修改
-    let actionToExecute = null;
+    let actionsToExecute = [];
     
     // 检查直接返回的action
     if (data.action && data.data) {
-      actionToExecute = data.action;
+      actionsToExecute = [data.action];
     }
     // 检查response中的JSON action
     else if (data.response) {
@@ -54,8 +55,15 @@ export async function POST(req: Request) {
         const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsedResponse = JSON.parse(jsonMatch[0]);
-          if (parsedResponse.action) {
-            actionToExecute = parsedResponse.action;
+          
+          // 检查是否是批量操作
+          if (parsedResponse.actions && Array.isArray(parsedResponse.actions)) {
+            actionsToExecute = parsedResponse.actions;
+            console.log("🔄 检测到批量操作:", actionsToExecute.length, "个动作");
+          }
+          // 检查是否是单个操作
+          else if (parsedResponse.action) {
+            actionsToExecute = [parsedResponse.action];
           }
         }
       } catch (e) {
@@ -63,9 +71,14 @@ export async function POST(req: Request) {
       }
     }
     
-    if (actionToExecute) {
-      const { type, data: payload } = actionToExecute;
-      console.log(`🔧 执行动作: ${type}`, payload);
+    if (actionsToExecute.length > 0) {
+      console.log(`🔧 准备执行 ${actionsToExecute.length} 个动作`);
+      
+      // 执行所有动作
+      for (let i = 0; i < actionsToExecute.length; i++) {
+        const actionToExecute = actionsToExecute[i];
+        const { type, data: payload } = actionToExecute;
+        console.log(`🔧 执行动作 ${i + 1}/${actionsToExecute.length}: ${type}`, payload);
 
       switch (type) {
         case "add_field":
@@ -82,8 +95,16 @@ export async function POST(req: Request) {
                 }))
               };
               targetSection.fields = targetSection.fields || [];
-              targetSection.fields.push(newField);
-              console.log("✅ 添加新字段:", newField);
+              
+              // 使用统一的排序工具函数
+              if (shouldSortSection(targetSection.title)) {
+                const sortedFields = sortFieldsBySectionType(targetSection.title, targetSection.fields, newField);
+                targetSection.fields = sortedFields;
+                console.log("✅ 添加字段并按规则排序:", newField);
+              } else {
+                targetSection.fields.push(newField);
+                console.log("✅ 添加新字段:", newField);
+              }
             } else {
               console.warn("⚠️ 未找到目标section:", payload.sectionId);
             }
@@ -209,6 +230,9 @@ export async function POST(req: Request) {
         default:
           console.log("⚠️ 未知动作类型:", type);
       }
+      }
+      
+      console.log(`✅ 批量操作完成: ${actionsToExecute.length} 个动作执行完毕`);
     }
 
     // 返回结果
@@ -216,7 +240,8 @@ export async function POST(req: Request) {
       success: true,
       message: data.response || "Edit applied successfully.",
       updatedResume,
-      aiAction: actionToExecute || null,
+      aiAction: actionsToExecute.length === 1 ? actionsToExecute[0] : null,
+      aiActions: actionsToExecute.length > 1 ? actionsToExecute : null,
       originalResponse: data.response
     });
 

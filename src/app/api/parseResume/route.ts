@@ -110,11 +110,20 @@ export async function POST(req: Request) {
     - 描述信息应该作为 "Description: [描述内容]" 的point
     - 职责信息应该作为 "Responsibility: [职责内容]" 的point
     
-    ⚠️ 重要：Company Name字段的value属性是必须的，不能为空或null！
+    ⚠️ 重要：Company Name和University Name字段的value属性是必须的，不能为空或null！
+    
+    🎯 工作经历解析规则：
     - 如果公司名称是 "Apple (Apple Online Store - Onsite-Vendor)"，那么value应该是 "Apple"
     - 如果公司名称是 "Apple Inc."，那么value应该是 "Apple Inc."
     - 如果公司名称是 "Apple"，那么value应该是 "Apple"
     - 公司名称必须从原始文本中准确提取，不能遗漏或截断
+    
+    🎯 教育背景解析规则：
+    - 如果大学名称是 "The University of Texas at Arlington"，那么University Name的value应该是 "The University of Texas at Arlington"
+    - 如果大学名称是 "MIT"，那么University Name的value应该是 "MIT"
+    - 如果大学名称是 "Stanford University"，那么University Name的value应该是 "Stanford University"
+    - 大学名称必须从原始文本中准确提取，不能遗漏或截断
+    - University Name字段的value属性是必须的，不能为空或null！
 
     REQUIRED JSON FORMAT (MUST BE AN ARRAY):
     [
@@ -163,7 +172,15 @@ export async function POST(req: Request) {
       {
         "section": "Education",
         "fields": [
-          { "name": "University Name", "points": ["University Name", "Location", "Date Range", "Degree"] }
+          { 
+            "name": "University Name", 
+            "value": "The University of Texas at Arlington",
+            "points": [
+              "Location: Arlington, TX",
+              "Date: Sep. 2017 - Dec. 2020",
+              "Degree: B.S. Computer Science"
+            ]
+          }
         ]
       },
       {
@@ -317,10 +334,12 @@ export async function POST(req: Request) {
                 };
               });
               
-              // 🎯 特殊处理：如果字段名是 "Company Name" 且有实际值，用实际值替换字段名
+              // 🎯 特殊处理：如果字段名是 "Company Name" 或 "University Name" 且有实际值，用实际值替换字段名
               let fieldName = field.name || 'Unnamed Field';
               if (fieldName === 'Company Name' && field.value) {
                 fieldName = field.value; // 用实际公司名替换默认字段名
+              } else if (fieldName === 'University Name' && field.value) {
+                fieldName = field.value; // 用实际大学名替换默认字段名
               }
               
               return {
@@ -343,10 +362,12 @@ export async function POST(req: Request) {
             id: 'section-0',
             title: data.section || data.title || 'Main Section',
             fields: (data.fields || []).map((field: any, fieldIndex: number) => {
-              // 🎯 特殊处理：如果字段名是 "Company Name" 且有实际值，用实际值替换字段名
+              // 🎯 特殊处理：如果字段名是 "Company Name" 或 "University Name" 且有实际值，用实际值替换字段名
               let fieldName = field.name || 'Unnamed Field';
               if (fieldName === 'Company Name' && field.value) {
                 fieldName = field.value; // 用实际公司名替换默认字段名
+              } else if (fieldName === 'University Name' && field.value) {
+                fieldName = field.value; // 用实际大学名替换默认字段名
               }
               
               return {

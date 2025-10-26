@@ -55,6 +55,7 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
             lastAddedFieldId: null,
             lastAddedPointId: null,
             lastModifiedPoint: null,
+            lastDeletedPoint: null,
             aiModifiedPoints: new Set<string>(),
             aiOriginalContents: {},
             showUndoPrompt: false,
@@ -68,6 +69,10 @@ export const createUiSlice: SliceCreator<UiSlice> = (set, get) => ({
 
   lastAddedPointId: null,
   setLastAddedPointId: (id) => set({ lastAddedPointId: id }),
+  
+  // 删除操作undo支持
+  lastDeletedPoint: null,
+  setLastDeletedPoint: (point) => set({ lastDeletedPoint: point }),
   
   // AI修改高亮状态
   aiModifiedPoints: new Set<string>(),

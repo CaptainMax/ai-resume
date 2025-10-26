@@ -167,21 +167,50 @@ reorderPoints: (
 
 
   removePoint: (sectionId: string, fieldId: string, pointId: string) =>
-    set((state) => ({
-      sections: state.sections.map((s) =>
-        s.id === sectionId
-          ? {
-              ...s,
-              fields: (s.fields ?? []).map((f) =>
-                f.id === fieldId
-                  ? {
-                      ...f,
-                      points: (f.points ?? []).filter((p) => p.id !== pointId),
-                    }
-                  : f
-              ),
+    set((state) => {
+      // 找到被删除的point内容，用于undo
+      let deletedPoint: ResumePoint | null = null;
+      for (const section of state.sections) {
+        if (section.id === sectionId) {
+          for (const field of section.fields) {
+            if (field.id === fieldId) {
+              const point = field.points?.find(p => p.id === pointId);
+              if (point) {
+                deletedPoint = point;
+                break;
+              }
             }
-          : s
-      ),
-    })),
+          }
+        }
+        if (deletedPoint) break;
+      }
+
+      // 记录被删除的point信息，用于undo
+      if (deletedPoint) {
+        get().setLastDeletedPoint({
+          sectionId,
+          fieldId,
+          pointId,
+          point: deletedPoint
+        });
+      }
+
+      return {
+        sections: state.sections.map((s) =>
+          s.id === sectionId
+            ? {
+                ...s,
+                fields: (s.fields ?? []).map((f) =>
+                  f.id === fieldId
+                    ? {
+                        ...f,
+                        points: (f.points ?? []).filter((p) => p.id !== pointId),
+                      }
+                    : f
+                ),
+              }
+            : s
+        ),
+      };
+    }),
 });

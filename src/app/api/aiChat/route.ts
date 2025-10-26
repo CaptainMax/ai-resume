@@ -33,7 +33,15 @@ SPECIAL REWRITE HANDLING:
 - Return the rewritten content directly as text (not JSON) for immediate display
 - Make the rewrite more professional, clear, and impactful
 
+SPECIAL DELETE CONFIRMATION HANDLING:
+- When user says "我确认删除这段", "确认删除", "confirm delete", "yes delete", "delete confirmed" or similar confirmation phrases, IMMEDIATELY execute the delete operation
+- Do NOT ask for further confirmation - the user has already confirmed
+- Use the selected content from context to identify what to delete
+- Return JSON action to delete the selected content immediately
+
 For ANY request that involves adding, modifying, or changing resume content, ALWAYS return JSON in this format (don't ask for clarification):
+
+SINGLE ACTION:
 {
   "action": {
     "type": "add_field|remove_field|update_field|add_point|remove_point|update_point|move_field|move_point",
@@ -48,18 +56,48 @@ For ANY request that involves adding, modifying, or changing resume content, ALW
   }
 }
 
+BATCH ACTIONS (for multiple operations):
+{
+  "actions": [
+    {
+      "type": "update_point",
+      "data": {
+        "sectionId": "section_id",
+        "fieldId": "field_id",
+        "pointId": "point_id",
+        "content": "updated_content"
+      }
+    },
+    {
+      "type": "update_point", 
+      "data": {
+        "sectionId": "section_id",
+        "fieldId": "field_id",
+        "pointId": "point_id2",
+        "content": "updated_content2"
+      }
+    }
+  ]
+}
+
 EXAMPLES:
-- Add education: {"action": {"type": "add_field", "data": {"sectionId": "education_section_id", "fieldName": "Master's - Trine University", "points": ["School: Trine University", "Major: MISI", "Duration: Fall 2023 - Fall 2025"]}}}
-- Add work: {"action": {"type": "add_field", "data": {"sectionId": "work_section_id", "fieldName": "Software Engineer - Apple", "points": ["Company: Apple", "Position: Software Engineer", "Duration: 2022-2025", "Description: ..."]}}}
+- Add education: {"action": {"type": "add_field", "data": {"sectionId": "education_section_id", "fieldName": "The University of Texas at Arlington", "points": ["Location: Arlington, TX", "Date: Sep. 2017 - Dec. 2020", "Degree: B.S. Computer Science"]}}}
+- Add work: {"action": {"type": "add_field", "data": {"sectionId": "work_section_id", "fieldName": "Apple", "points": ["Position: Software Engineer", "Date: Mar. 2022 - Feb. 2025", "Description: Developed iOS applications"]}}}
 - Add point: {"action": {"type": "add_point", "data": {"sectionId": "section_id", "fieldId": "field_id", "content": "New point content"}}}
 - Update point: {"action": {"type": "update_point", "data": {"sectionId": "section_id", "fieldId": "field_id", "pointId": "point_id", "content": "Updated content"}}}
 - Remove field: {"action": {"type": "remove_field", "data": {"sectionId": "section_id", "fieldId": "field_id"}}}
+- Remove point: {"action": {"type": "remove_point", "data": {"sectionId": "section_id", "fieldId": "field_id", "pointId": "point_id"}}}
+- Delete confirmation: When user says "我确认删除这段" and context shows selected content, immediately return {"action": {"type": "remove_point", "data": {"sectionId": "section_id", "fieldId": "field_id", "pointId": "point_id"}}}
 
-IMPORTANT: 
-- Use exact IDs from context
-- Be creative with field names and point content
-- Support any type of resume modification
-- No hardcoded field structures - let AI decide the best format
+BATCH OPERATION EXAMPLES:
+- Remove "Responsibility:" prefix from all points: {"actions": [{"type": "update_point", "data": {"sectionId": "work_section_id", "fieldId": "field_id", "pointId": "point_id1", "content": "Revamped the interaction service..."}}, {"type": "update_point", "data": {"sectionId": "work_section_id", "fieldId": "field_id", "pointId": "point_id2", "content": "Proficient in building dynamic..."}}]}
+- Update multiple points: {"actions": [{"type": "update_point", "data": {"sectionId": "section_id", "fieldId": "field_id", "pointId": "point_id1", "content": "Updated content 1"}}, {"type": "update_point", "data": {"sectionId": "section_id", "fieldId": "field_id", "pointId": "point_id2", "content": "Updated content 2"}}]}
+
+IMPORTANT EDUCATION RULES:
+- For education fields: fieldName should be the FULL SCHOOL NAME (e.g., "The University of Texas at Arlington", "Stanford University")
+- For education points: DO NOT repeat the school name in points, only include: Location, Date, Degree, Major, GPA, etc.
+- For work fields: fieldName should be the COMPANY NAME (e.g., "Apple", "Google", "Microsoft")
+- For work points: DO NOT repeat the company name in points, only include: Position, Date, Description, Responsibilities, etc.
 
 For other requests, just respond normally with helpful text.`;
 
