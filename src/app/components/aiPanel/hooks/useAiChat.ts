@@ -5,6 +5,7 @@ import { useStructuredActions } from "./useStructuredActions";
 import { useRewriteHandler } from "./useRewriteHandler";
 import { useLanguageDetection } from "./useLanguageDetection";
 import { ResumeSection } from "@/app/store/types";
+import { useResumeStore } from "@/app/store/useResumeStore";
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
 
@@ -74,26 +75,35 @@ export function useAiChat() {
 
       console.log("📤 发送AI请求，上下文:", context);
 
-      const res = await fetch("/api/aiChat", {
+      const res = await fetch("/api/editResume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg, context }),
+        body: JSON.stringify({ 
+          message: msg, 
+          resumeContext: {
+            resume: { sections },
+            ...context
+          }
+        }),
       });
 
       const data = await res.json();
       
       if (data.success) {
-        // 检查是否是结构化操作
-        if (data.action && data.data) {
-          await handleStructuredAction(data.action, data.data);
-          setShowUndoPrompt(true); // 显示undo提示
+        // 检查是否有更新的简历数据
+        if (data.updatedResume) {
+          // 更新简历数据
+          const { setSections } = useResumeStore.getState();
+          setSections(data.updatedResume.sections);
           
-          // 简单的确认消息
-          const message = "✅ AI已根据您的指令进行了修改。请确认是否保留。";
+          // 显示AI的回复消息
+          const message = data.message || "✅ AI已根据您的指令进行了修改。";
           setMessages((m) => [
             ...m,
             { role: "assistant", content: message },
           ]);
+          
+          setShowUndoPrompt(true); // 显示undo提示
         } else if (data.response) {
           // 检查response中是否包含JSON action
           try {

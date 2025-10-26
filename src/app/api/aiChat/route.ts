@@ -1,16 +1,6 @@
 import { NextResponse } from "next/server";
 import { openai } from "../openai-client";
 
-// TODO: 导入新的AI Agent架构组件
-// import { ReasoningEngine } from "../../reasoning/reasoningEngine";
-// import { PlanGenerator } from "../../reasoning/planGenerator";
-// import { ContextMemory } from "../../reasoning/contextMemory";
-// import { AgentRegistry } from "../../agentsOrchestrator/agentRegistry";
-// import { AgentRouter } from "../../agentsOrchestrator/agentRouter";
-// import { AgentOrchestrator } from "../../agentsOrchestrator/agentOrchestrator";
-// import { FeedbackLogger } from "../../feedback/feedbackLogger";
-// import { PromptMonitor } from "../../feedback/promptMonitor";
-// import { AutoTuner } from "../../feedback/autoTuner";
 
 export async function POST(req: Request) {
   try {
@@ -23,58 +13,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing message" }, { status: 400 });
     }
 
-    // TODO: 集成新的AI Agent架构
-    // 1. 初始化组件
-    // const contextMemory = new ContextMemory();
-    // const reasoningEngine = new ReasoningEngine(contextMemory);
-    // const planGenerator = new PlanGenerator(reasoningEngine);
-    // const agentRegistry = new AgentRegistry();
-    // const agentRouter = new AgentRouter(agentRegistry);
-    // const agentOrchestrator = new AgentOrchestrator(agentRegistry, agentRouter, contextMemory);
-    // const feedbackLogger = new FeedbackLogger();
-    // const promptMonitor = new PromptMonitor(feedbackLogger);
-    // const autoTuner = new AutoTuner(promptMonitor, feedbackLogger);
-
-    // 2. 分析用户意图
-    // const userIntent = await reasoningEngine.analyzeUserIntent(message, context);
-    
-    // 3. 分类任务
-    // const taskClassification = await reasoningEngine.classifyTask(userIntent);
-    
-    // 4. 生成执行计划
-    // const executionPlan = await planGenerator.generatePlan({
-    //   userIntent,
-    //   taskClassification,
-    //   availableAgents: agentRegistry.getActiveAgents().map(a => a.id),
-    //   userPreferences: await contextMemory.getUserPreferences(context?.userId),
-    //   sessionHistory: contextMemory.getConversationHistory()
-    // });
-
-    // 5. 执行编排
-    // const result = await agentOrchestrator.orchestrateExecution(
-    //   context?.sessionId || 'default',
-    //   context?.userId || 'anonymous',
-    //   userIntent,
-    //   taskClassification,
-    //   executionPlan
-    // );
-
-    // 6. 记录反馈
-    // await feedbackLogger.logAgentExecution(
-    //   context?.sessionId || 'default',
-    //   context?.userId || 'anonymous',
-    //   'aiChatAgent',
-    //   'chat',
-    //   { message, context },
-    //   result,
-    //   result.success,
-    //   result.executionTime,
-    //   { userIntent, taskClassification, routingDecision: null }
-    // );
-
-    // 临时保持现有逻辑，直到新架构完全集成
-
-    // 构建系统提示词，包含上下文信息
     let systemPrompt = `You are a helpful resume editing assistant. You can help users edit their resume content naturally, just like ChatGPT.
 
 You have access to the user's resume structure and can perform these actions:
@@ -95,7 +33,7 @@ SPECIAL REWRITE HANDLING:
 - Return the rewritten content directly as text (not JSON) for immediate display
 - Make the rewrite more professional, clear, and impactful
 
-For actions that modify the resume, return JSON in this flexible format:
+For ANY request that involves adding, modifying, or changing resume content, ALWAYS return JSON in this format (don't ask for clarification):
 {
   "action": {
     "type": "add_field|remove_field|update_field|add_point|remove_point|update_point|move_field|move_point",
@@ -137,7 +75,7 @@ For other requests, just respond normally with helpful text.`;
         { role: "user", content: message },
       ],
       temperature: 0.3, // 降低随机性，提高稳定性
-      max_tokens: 2000, // 增加token限制
+      max_tokens: 8000, // 增加token限制
       top_p: 0.9,
     });
 
@@ -190,18 +128,6 @@ For other requests, just respond normally with helpful text.`;
   } catch (err) {
     console.error("❌ AI聊天API错误:", err);
     
-    // TODO: 记录错误到反馈系统
-    // await feedbackLogger.logAgentExecution(
-    //   context?.sessionId || 'default',
-    //   context?.userId || 'anonymous',
-    //   'aiChatAgent',
-    //   'chat',
-    //   { message, context },
-    //   { error: err instanceof Error ? err.message : String(err) },
-    //   false,
-    //   0,
-    //   { userIntent: null, taskClassification: null, routingDecision: null }
-    // );
     
     return NextResponse.json({ 
       success: false, 

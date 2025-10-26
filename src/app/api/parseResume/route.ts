@@ -21,13 +21,13 @@ function mergeWorkExperienceSections(sections: any[]): any[] {
   const mergedSection = {
     id: `section-${Date.now()}`,
     title: 'Work Experience',
-    fields: []
+    fields: [] as any[]
   };
 
   // 收集所有fields
   workExperienceSections.forEach(section => {
     if (section.fields) {
-      section.fields.forEach(field => {
+      section.fields.forEach((field: any) => {
         // 为每个field添加唯一ID
         const mergedField = {
           ...field,
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
         { role: "user", content: resumeText },
       ],
       temperature: 0.1,
-      max_tokens: 4000,
+      max_tokens: 9000,
     });
 
     const response = completion.choices[0].message.content || "";
