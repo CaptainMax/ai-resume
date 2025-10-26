@@ -38,6 +38,7 @@ export default function AiPanel() {
   const { handleSend } = useAiChat();
   const { handleConfirmKeep, handleUndoLastAction } = useConfirmationHandler();
   const { recordOriginalData, sendFeedback } = useFeedbackCollection();
+  
 
   // 处理发送消息
   const onSend = (msg: string) => {

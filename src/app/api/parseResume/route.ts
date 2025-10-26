@@ -4,6 +4,50 @@ import JSON5 from "json5";
 import { LearningSystem } from "../../agents/learningSystem";
 import { ConfidenceEvolution } from "../../agents/confidenceEvolution";
 
+// 合并Work Experience sections的函数
+function mergeWorkExperienceSections(sections: any[]): any[] {
+  // 找到所有Work Experience sections
+  const workExperienceSections = sections.filter(section => 
+    section.title.toLowerCase().includes('work') || 
+    section.title.toLowerCase().includes('experience') ||
+    section.title.toLowerCase().includes('employment')
+  );
+
+  if (workExperienceSections.length <= 1) {
+    return sections; // 不需要合并
+  }
+
+  // 创建合并后的Work Experience section
+  const mergedSection = {
+    id: `section-${Date.now()}`,
+    title: 'Work Experience',
+    fields: []
+  };
+
+  // 收集所有fields
+  workExperienceSections.forEach(section => {
+    if (section.fields) {
+      section.fields.forEach(field => {
+        // 为每个field添加唯一ID
+        const mergedField = {
+          ...field,
+          id: field.id || `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        };
+        mergedSection.fields.push(mergedField);
+      });
+    }
+  });
+
+  // 移除原来的Work Experience sections，添加合并后的section
+  const otherSections = sections.filter(section => 
+    !section.title.toLowerCase().includes('work') && 
+    !section.title.toLowerCase().includes('experience') &&
+    !section.title.toLowerCase().includes('employment')
+  );
+
+  return [...otherSections, mergedSection];
+}
+
 export async function POST(req: Request) {
   const { resumeText } = await req.json();
   
@@ -326,6 +370,10 @@ export async function POST(req: Request) {
       const normalizedData = normalizeToSectionArray(optimizedResult);
       console.log("📊 标准化后的数据结构:", normalizedData.length, "个sections");
       
+      // 🔄 合并Work Experience sections
+      const mergedData = mergeWorkExperienceSections(normalizedData);
+      console.log("🔄 合并Work Experience后:", mergedData.length, "个sections");
+      
       // 🎯 计算动态置信度
       const userId = "user-123"; // TODO: 从实际用户ID获取
       const baseConfidence = 0.7;
@@ -345,7 +393,7 @@ export async function POST(req: Request) {
       
       return NextResponse.json({ 
         success: true, 
-        data: normalizedData,
+        data: mergedData,
         source: 'AI-Parser-with-Learning',
         confidence: {
           base: confidenceMetrics.baseConfidence,
