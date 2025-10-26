@@ -9,7 +9,7 @@ import { useResumeStore } from "@/app/store/useResumeStore";
 import { useAiChat } from "./hooks/useAiChat";
 import { useConfirmationHandler } from "./hooks/useConfirmationHandler";
 import { useFeedbackCollection } from "./hooks/useFeedbackCollection";
-import { useAiOrchestrator } from "./hooks/useAiOrchestrator";
+import { useSimpleAI } from "./hooks/useSimpleAI";
 import FeedbackConfirmation from "./FeedbackConfirmation";
 import LearningInsights from "./LearningInsights";
 import ConfidenceEvolution from "./ConfidenceEvolution";
@@ -44,28 +44,24 @@ export default function AiPanel() {
   const { handleSend } = useAiChat();
   const { handleConfirmKeep, handleUndoLastAction } = useConfirmationHandler();
   const { recordOriginalData, sendFeedback, collectFeedback } = useFeedbackCollection();
-  const { executeIntentAction, analyzeIntent, collectLLMFeedback } = useAiOrchestrator();
+  const { processMessage, isLoading: aiLoading } = useSimpleAI();
 
-  // 处理发送消息 - 使用推理驱动的意图分析
+  // 处理发送消息 - 使用简单的AI系统
   const onSend = async (msg: string) => {
     try {
-      // 🧠 使用LLM进行真正的意图分析
-      const { intent, entities, confidence } = await analyzeIntent(msg);
+      console.log("🤖 使用简单AI处理:", msg);
+      const result = await processMessage(msg);
       
-      if (confidence > 0.7) {
-        // 高置信度：直接执行
-        console.log("🎯 高置信度意图检测:", { intent, entities, confidence });
-        await handleExecuteIntentAction(msg);
-      } else {
-        // 低置信度：显示意图分析对话框让用户确认
-        console.log("🤔 低置信度意图，需要用户确认:", { intent, entities, confidence });
-        setCurrentUserInput(msg);
-        setShowIntentAnalyzer(true);
-      }
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: result.message
+      }]);
     } catch (error) {
-      console.error('❌ 意图分析失败，回退到传统聊天:', error);
-      // 回退到传统聊天模式
-      handleSend(msg, sections, selectedId, selectedField, selectedPoint, messages, setMessages, setIsLoading, setShowUndoPrompt);
+      console.error('❌ AI处理失败:', error);
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: "处理失败，请重试"
+      }]);
     }
   };
 
@@ -95,22 +91,10 @@ export default function AiPanel() {
     // 反馈已通过FeedbackConfirmation组件发送
   };
 
-  // 🤖 执行智能意图操作 - 使用推理驱动的Agent系统
-  const handleExecuteIntentAction = async (userInput: string) => {
-    const result = await executeIntentAction(userInput);
-    
-    if (result.success) {
-      setMessages(prev => [...prev, { 
-        role: "assistant", 
-        content: result.message
-      }]);
-    } else {
-      setMessages(prev => [...prev, { 
-        role: "assistant", 
-        content: result.message
-      }]);
-    }
-  };
+
+  function handleExecuteIntentAction(currentUserInput: string) {
+    throw new Error("Function not implemented.");
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -139,8 +123,7 @@ export default function AiPanel() {
             onUndoLastAction={onUndoLastAction}
             onFeedback={(satisfaction) => {
               // 🎯 人类反馈机制
-              collectLLMFeedback({
-                userId: 'user-123',
+              collectFeedback({
                 reasoning: { human_feedback: true },
                 satisfaction,
                 success: satisfaction > 0.5,

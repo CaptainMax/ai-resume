@@ -86,7 +86,6 @@ export class IntentRouter {
     const DeleteAgentModule = await import('@/app/agents/deleteAgent');
     const EditAgentModule = await import('@/app/agents/editAgent');
     const OptimizeAgentModule = await import('@/app/agents/optimizeAgent');
-    const ImproveResumeAgentModule = await import('@/app/agents/improveResumeAgent');
     const SummaryAgentModule = await import('@/app/agents/summaryAgent');
 
     // 注册意图到Agent的映射
@@ -96,7 +95,6 @@ export class IntentRouter {
     this.agentRegistry.set('delete_item', new DeleteAgentModule.DeleteAgent());
     this.agentRegistry.set('edit_item', new EditAgentModule.EditAgent());
     this.agentRegistry.set('optimize_content', new OptimizeAgentModule.OptimizeAgent());
-    this.agentRegistry.set('improve_resume', new ImproveResumeAgentModule.ImproveResumeAgent());
     this.agentRegistry.set('add_summary', new SummaryAgentModule.SummaryAgent());
 
     console.log('🔧 Agent注册表初始化完成:', Array.from(this.agentRegistry.keys()));
