@@ -194,7 +194,7 @@ const sendFeedback = async (userId: string, reasoning: any, success: boolean, st
 
 export class WorkExperienceAgent {
   async execute(entities: any, context: any): Promise<{ success: boolean; message: string; updatedResume?: any }> {
-    logStage("intent-received", { entities, contextKeys: Object.keys(context) });
+    logStage("intent-received", { entities, contextKeys: context ? Object.keys(context) : 'null context' });
     
     try {
       // 🧠 深度克隆sections以避免状态污染
@@ -241,15 +241,63 @@ export class WorkExperienceAgent {
       const userData = getUserLearningData(userId);
       
       // 学习用户偏好格式
-      if (entities.company_name) learnUserPreference(userId, 'company_field', 'company_name');
-      if (entities.job_title) learnUserPreference(userId, 'position_field', 'job_title');
+      if (entities.company_name || entities.company) learnUserPreference(userId, 'company_field', 'company_name');
+      if (entities.job_title || entities.position) learnUserPreference(userId, 'position_field', 'job_title');
       if (entities.start_date && entities.end_date) learnUserPreference(userId, 'period_format', 'date_range');
       
-      const company = entities.company_name || entities.company || 'Company';
-      const position = entities.job_title || entities.position || 'Software Engineer';
-      const period = entities.period || entities.duration || entities.time || 
+      // 智能实体映射 - 支持多种字段名
+      let company = entities.company_name || entities.company || entities.data?.company || 'Company';
+      let position = entities.job_title || entities.position || entities.data?.position || 'Software Engineer';
+      let period = entities.period || entities.duration || entities.time || entities.data?.duration ||
         (entities.start_date && entities.end_date ? `${entities.start_date} - ${entities.end_date}` : '2020-2024');
-      const description = entities.description || '';
+      let description = entities.description || entities.data?.description || '';
+      
+      // 如果实体提取失败，尝试从用户输入中智能提取
+      if (company === 'Company' && entities.userInput) {
+        const userInput = entities.userInput;
+        // 提取公司名称 - 寻找"加入了...公司"模式
+        const companyMatch = userInput.match(/加入了\s*([^公司]+)公司/);
+        if (companyMatch) {
+          company = companyMatch[1].trim();
+        }
+        
+        // 提取职位 - 寻找"作为...工程师"模式
+        const positionMatch = userInput.match(/作为(?:一个)?\s*([^，,。.]+)/);
+        if (positionMatch) {
+          position = positionMatch[1].trim();
+        }
+        
+        // 提取时间 - 寻找"从...加入了"模式
+        const timeMatch = userInput.match(/从(\d{2}-\d{4})/);
+        if (timeMatch) {
+          period = timeMatch[1] + ' - Present';
+        }
+        
+        // 提取描述 - 寻找"主要职责"后的内容
+        const descMatch = userInput.match(/主要职责[：:]\s*(.+)/);
+        if (descMatch) {
+          description = descMatch[1].trim();
+        }
+      }
+      
+      // 如果仍然没有提取到有效信息，使用默认值但记录警告
+      if (company === 'Company') {
+        logStage("entity-extraction-warning", { 
+          message: "未能从用户输入中提取公司名称，使用默认值",
+          userInput: entities.userInput
+        });
+      }
+      
+      // 调试日志 - 显示提取的实体
+      logStage("entity-extraction", { 
+        extractedEntities: {
+          company,
+          position, 
+          period,
+          description
+        },
+        rawEntities: entities
+      });
       
       logStage("deduplication-check", { company, position, period, description });
       

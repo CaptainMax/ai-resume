@@ -89,15 +89,19 @@ export class IntentRouter {
     const ImproveResumeAgentModule = await import('@/app/agents/improveResumeAgent');
     const SummaryAgentModule = await import('@/app/agents/summaryAgent');
 
-    // 注册意图到Agent的映射
+    // 注册意图到Agent的映射 - 使用推理驱动的架构
     this.agentRegistry.set('add_education', new EducationAgentModule.EducationAgent());
-    this.agentRegistry.set('add_work_experience', new WorkExperienceAgentModule.WorkExperienceAgent());
+    this.agentRegistry.set('add_work_experience', new WorkExperienceAgentModule.WorkExperienceAgent()); // 使用专门的工作经验Agent
     this.agentRegistry.set('add_skill', new SkillAgentModule.SkillAgent());
     this.agentRegistry.set('delete_item', new DeleteAgentModule.DeleteAgent());
     this.agentRegistry.set('edit_item', new EditAgentModule.EditAgent());
     this.agentRegistry.set('optimize_content', new OptimizeAgentModule.OptimizeAgent());
     this.agentRegistry.set('improve_resume', new ImproveResumeAgentModule.ImproveResumeAgent());
     this.agentRegistry.set('add_summary', new SummaryAgentModule.SummaryAgent());
+    
+    // 添加新的推理驱动意图
+    this.agentRegistry.set('add_description_to_existing_company', new EditAgentModule.EditAgent());
+    this.agentRegistry.set('update_existing_work_experience', new EditAgentModule.EditAgent());
 
     console.log('🔧 Agent注册表初始化完成:', Array.from(this.agentRegistry.keys()));
   }

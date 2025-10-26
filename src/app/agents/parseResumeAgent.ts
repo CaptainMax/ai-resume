@@ -1,6 +1,8 @@
 // src/app/agents/parseResumeAgent.ts
 // 📄 简历解析Agent - 专门处理简历解析任务
 
+import { IAgent } from './base/IAgent';
+
 export interface ParseResumeRequest {
   resumeText: string;
   options?: {
@@ -21,8 +23,13 @@ export interface ParseResumeResponse {
   };
 }
 
-export class ParseResumeAgent {
-  private name: string = 'ParseResumeAgent';
+export class ParseResumeAgent implements IAgent {
+  id = 'parseResumeAgent';
+  name = 'Resume Parser';
+  description = '解析简历文件为结构化数据';
+  status: 'available' | 'busy' | 'disabled' = 'available';
+  capabilities = ['parse', 'extract', 'validate'];
+  dependencies: string[] = [];
   private version: string = '1.0.0';
 
   /**

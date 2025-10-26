@@ -1,7 +1,7 @@
-// src/app/agents/index.ts
+// src/app/agents/agentRegistry.ts
 // 🎯 动态 Agent Registry - 智能可扩展的 Agent 管理系统
 
-import { IAgent } from './base/IAgent';
+import { IAgent, AgentExecutionResult } from './base/IAgent';
 import { ParseResumeAgent } from './parseResumeAgent';
 import { AnalyzeResumeAgent } from './analyzeResumeAgent';
 import { ImproveResumeAgent } from './improveResumeAgent';
@@ -185,7 +185,7 @@ export function selectAgentForTask(taskType: string, requiredCapabilities: strin
 /**
  * 🎯 执行任务（智能路由）
  */
-export async function executeTask(taskType: string, taskData: any, requiredCapabilities: string[] = []): Promise<any> {
+export async function executeTask(taskType: string, taskData: any, requiredCapabilities: string[] = []): Promise<AgentExecutionResult> {
   const agent = selectAgentForTask(taskType, requiredCapabilities);
   
   if (!agent) {
@@ -244,12 +244,3 @@ export function getAvailableAgentsList(): string[] {
 export function createAgent(agentType: string): IAgent | null {
   return getAgentById(agentType);
 }
-
-// 🎯 导出所有 Agent 类（向后兼容）
-export {
-  ParseResumeAgent,
-  AnalyzeResumeAgent,
-  ImproveResumeAgent,
-  SummarizeResumeAgent,
-  ResumeModifierAgent
-};

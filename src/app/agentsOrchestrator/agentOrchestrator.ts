@@ -1,11 +1,17 @@
 // src/app/agentsOrchestrator/agentOrchestrator.ts
 // 🎯 Agent编排器 - 智能协调多个AI Agent的执行
 
-import { AgentRegistry } from './agentRegistry';
-import { AgentRouter } from './agentRouter';
 import { ExecutionPlanner } from './executionPlanner';
 import { TaskExecutor } from './taskExecutor';
 import { ResultAggregator } from './resultAggregator';
+import { 
+  getAvailableAgents, 
+  selectAgentForTask, 
+  executeTask, 
+  getAgentStats,
+  findAgentByCapability,
+  findBestAgentByCapabilities
+} from '../agents/agentRegistry';
 
 export interface OrchestrationRequest {
   userInput: string;
@@ -27,20 +33,16 @@ export interface OrchestrationResult {
 }
 
 export class AgentOrchestrator {
-  private agentRegistry: AgentRegistry;
-  private agentRouter: AgentRouter;
   private executionPlanner: ExecutionPlanner;
   private taskExecutor: TaskExecutor;
   private resultAggregator: ResultAggregator;
   private executionHistory: Map<string, OrchestrationResult[]> = new Map();
 
   constructor() {
-    this.agentRegistry = new AgentRegistry();
-    this.agentRouter = new AgentRouter(this.agentRegistry);
-    this.executionPlanner = new ExecutionPlanner(this.agentRegistry);
-    this.taskExecutor = new TaskExecutor(this.agentRegistry);
+    this.executionPlanner = new ExecutionPlanner();
+    this.taskExecutor = new TaskExecutor();
     this.resultAggregator = new ResultAggregator();
-    console.log("🎯 AgentOrchestrator initialized with full orchestration capabilities");
+    console.log("🎯 AgentOrchestrator initialized with dynamic agent registry");
   }
 
   /**
@@ -79,48 +81,84 @@ export class AgentOrchestrator {
   }
 
   /**
-   * ⚡ 执行简单任务
+   * ⚡ Execute simple task (patched version)
+   * Ensures that even simple actions run through ExecutionPlanner + TaskExecutor
    */
   private async executeSimpleTask(
-    request: OrchestrationRequest, 
+    request: OrchestrationRequest,
     startTime: number
   ): Promise<OrchestrationResult> {
-    console.log("⚡ 执行简单任务");
+    console.log("⚡ [Patched] Executing simple task with full orchestration chain");
 
-    // 直接使用单个Agent
-    const routingDecision = await this.agentRouter.routeTask({
-      userIntent: request.userInput,
-      taskClassification: { complexity: 'simple' },
-      availableAgents: this.agentRegistry.getActiveAgents().map((a: any) => a.id),
-      userPreferences: {},
-      sessionHistory: [],
-      currentResume: request.context
-    });
+    // 1️⃣ Collect available agents
+    const availableAgents = getAvailableAgents();
+    console.log("🧩 Active agents:", availableAgents.map((a: any) => a.id));
+
+    // 2️⃣ Create an execution plan
+    const plan = await this.executionPlanner.createExecutionPlan(
+      request.userInput,
+      request.context,
+      availableAgents
+    );
+    console.log("📋 Simple task plan created:", this.executionPlanner.getPlanStats(plan));
+
+    // 3️⃣ Execute the plan
+    const executionStatus = await this.taskExecutor.executePlan(plan);
+    console.log("🚀 Simple task execution finished:", executionStatus.status);
+
+    // 4️⃣ Aggregate results
+    const aggregatedResult = this.resultAggregator.aggregateResults(
+      executionStatus,
+      executionStatus.results
+    );
+
+    // 5️⃣ Record result
+    const executionTime = Date.now() - startTime;
     
-    const selectedAgent = this.agentRegistry.getAgent(routingDecision.primaryAgent);
-    if (!selectedAgent) {
-      throw new Error(`Agent not found: ${routingDecision.primaryAgent}`);
+    // 提取更新后的简历数据
+    const updatedResume = this.extractUpdatedResume(executionStatus.results);
+    console.log("🔍 提取的简历数据:", updatedResume);
+    console.log("🔍 执行结果:", executionStatus.results);
+    
+    const result: OrchestrationResult = {
+      success: aggregatedResult.success,
+      result: {
+        updatedResume: updatedResume,
+        planId: plan.id
+      },
+      error: aggregatedResult.errors.join("; "),
+      executionTime,
+      agentsUsed: executionStatus.results.map((r) => r.stepId),
+      confidence: aggregatedResult.success ? 0.9 : 0.3,
+      suggestions: this.generateComplexSuggestions(aggregatedResult),
+      planId: plan.id,
+    };
+
+    this.recordExecution(request.userId, result);
+    return result;
+  }
+
+  /**
+   * 📄 提取更新后的简历数据
+   */
+  private extractUpdatedResume(results: any[]): any {
+    // 从执行结果中提取最新的简历数据
+    for (const result of results.reverse()) {
+      if (result.success && result.result) {
+        if (result.result.sections) {
+          return { sections: result.result.sections };
+        }
+        if (result.result.updatedResume) {
+          return result.result.updatedResume;
+        }
+        if (result.result.data && result.result.data.sections) {
+          return { sections: result.result.data.sections };
+        }
+      }
     }
     
-    const result = await this.executeWithAgent(selectedAgent, request);
-
-    const executionTime = Date.now() - startTime;
-    this.recordExecution(request.userId, {
-      success: true,
-      result: result,
-      executionTime,
-      agentsUsed: [selectedAgent.id],
-      confidence: result.confidence || 0.8
-    });
-
-    return {
-      success: true,
-      result: result,
-      executionTime,
-      agentsUsed: [selectedAgent.id],
-      confidence: result.confidence || 0.8,
-      suggestions: this.generateSuggestions(result)
-    };
+    // 如果没有找到更新数据，返回空结构
+    return { sections: [] };
   }
 
   /**
@@ -133,8 +171,8 @@ export class AgentOrchestrator {
     console.log("🎯 执行复杂任务");
 
     // 1. 创建执行计划
-    const availableAgents = this.agentRegistry.getActiveAgents();
-    const plan = this.executionPlanner.createExecutionPlan(
+    const availableAgents = getAvailableAgents();
+    const plan = await this.executionPlanner.createExecutionPlan(
       request.userInput,
       request.context,
       availableAgents
@@ -393,7 +431,8 @@ export class AgentOrchestrator {
     activeExecutions: number;
     systemHealth: 'healthy' | 'degraded' | 'unhealthy';
   } {
-    const activeAgents = this.agentRegistry.getActiveAgents().length;
+    const { available, busy, total } = getAgentStats();
+    const activeAgents = available + busy;
     const activeExecutions = this.taskExecutor['activeExecutions'].size;
     
     let systemHealth: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';

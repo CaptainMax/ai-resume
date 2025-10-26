@@ -1,6 +1,8 @@
 // src/app/agentsOrchestrator/executionPlanner.ts
 // 🎯 执行计划器 - 将复杂任务分解为可执行的步骤
 
+import { selectAgentForTask, findBestAgentByCapabilities } from '../agents/agentRegistry';
+
 export interface TaskStep {
   id: string;
   agentId: string;
@@ -26,51 +28,83 @@ export interface ExecutionPlan {
   completedAt?: Date;
 }
 
+export interface LLMReasoningResult {
+  intent: string;
+  entities: Record<string, any>;
+  confidence?: number;
+  reasoning?: string;
+}
+
 export class ExecutionPlanner {
-  private agentRegistry: any;
   private taskCounter: number = 0;
 
-  constructor(agentRegistry: any) {
-    this.agentRegistry = agentRegistry;
-    console.log("🎯 ExecutionPlanner initialized");
+  constructor() {
+    console.log("🎯 ExecutionPlanner initialized with dynamic agent registry");
   }
 
   /**
-   * 🧠 创建执行计划
+   * 🧠 创建执行计划（智能版本）
    */
-  createExecutionPlan(
+  async createExecutionPlan(
     userIntent: string,
     context: any,
     availableAgents: any[]
-  ): ExecutionPlan {
-    console.log("🎯 创建执行计划:", { userIntent, context });
+  ): Promise<ExecutionPlan> {
+    console.log("🎯 创建智能执行计划:", { userIntent, context });
+    console.log("🎯 可用Agents:", availableAgents.map(a => a.id));
 
     const taskId = `task-${++this.taskCounter}`;
     const steps: TaskStep[] = [];
 
-    // 根据用户意图分析需要的步骤
-    const requiredSteps = this.analyzeUserIntent(userIntent, context);
-    
-    // 为每个步骤分配Agent
-    for (const stepInfo of requiredSteps) {
-      const agent = this.selectBestAgent(stepInfo, availableAgents);
-      if (agent) {
-        const step: TaskStep = {
-          id: `step-${taskId}-${steps.length + 1}`,
-          agentId: agent.id,
-          action: stepInfo.action,
-          input: stepInfo.input,
-          dependencies: stepInfo.dependencies || [],
-          priority: stepInfo.priority || 1,
-          estimatedTime: agent.estimatedTime || 5000,
-          retryCount: 0,
-          maxRetries: 3
-        };
+    // 1. 使用LLM推理引擎分析用户意图
+    console.log("🧠 开始LLM意图分析:", userIntent);
+    const reasoningResult = await this.analyzeIntentWithLLM(userIntent, context);
+    console.log("🧠 LLM推理结果:", reasoningResult);
+    console.log("🧠 推理结果类型:", typeof reasoningResult);
+    console.log("🧠 推理结果是否为null:", reasoningResult === null);
+    console.log("🧠 推理结果是否有intent:", reasoningResult && reasoningResult.intent);
+
+    // 2. 基于推理结果生成结构化步骤
+    if (reasoningResult && reasoningResult.intent) {
+      console.log("✅ 使用LLM推理结果创建步骤");
+      console.log("📋 推理结果详情:", JSON.stringify(reasoningResult, null, 2));
+      const step = this.createStepFromReasoning(reasoningResult, taskId, availableAgents, context);
+      if (step) {
+        console.log("✅ 步骤创建成功:", step.id, "->", step.agentId);
         steps.push(step);
+      } else {
+        console.log("❌ 步骤创建失败");
+      }
+    } else {
+      console.log("❌ LLM推理结果无效，回退到传统方法");
+      console.log("🔍 推理结果:", reasoningResult);
+    }
+
+    // 3. 如果没有LLM推理结果，回退到传统方法
+    if (steps.length === 0) {
+      console.log("🔄 回退到传统意图分析");
+      const requiredSteps = this.analyzeUserIntent(userIntent, context);
+      
+      for (const stepInfo of requiredSteps) {
+        const agent = this.selectBestAgent(stepInfo, availableAgents);
+        if (agent) {
+          const step: TaskStep = {
+            id: `step-${taskId}-${steps.length + 1}`,
+            agentId: agent.id,
+            action: stepInfo.action,
+            input: stepInfo.input,
+            dependencies: stepInfo.dependencies || [],
+            priority: stepInfo.priority || 1,
+            estimatedTime: agent.estimatedTime || 5000,
+            retryCount: 0,
+            maxRetries: 3
+          };
+          steps.push(step);
+        }
       }
     }
 
-    // 分析依赖关系
+    // 4. 分析依赖关系
     const { parallelSteps, sequentialSteps } = this.analyzeDependencies(steps);
     
     const totalEstimatedTime = steps.reduce((sum, step) => sum + step.estimatedTime, 0);
@@ -86,69 +120,228 @@ export class ExecutionPlanner {
       createdAt: new Date()
     };
 
-    console.log("✅ 执行计划创建完成:", plan);
+    console.log("✅ 智能执行计划创建完成:", plan);
     return plan;
   }
 
   /**
-   * 🔍 分析用户意图，确定需要的步骤
+   * 🧠 使用LLM分析用户意图
+   */
+  private async analyzeIntentWithLLM(userIntent: string, context: any): Promise<any> {
+    try {
+      console.log("🧠 开始LLM意图分析:", userIntent);
+      
+      // 服务器端需要使用完整的URL
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const apiUrl = `${baseUrl}/api/llm-reasoning/analyze_intent`;
+      console.log("🧠 调用API:", apiUrl);
+      
+      // 调用LLM推理引擎
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userInput: userIntent })
+      });
+
+      if (!response.ok) {
+        throw new Error(`LLM推理失败: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("🧠 LLM推理完成:", result);
+      
+      // 检查API响应是否成功
+      if (result.success && result.intent) {
+        return {
+          intent: result.intent,
+          entities: result.entities || {},
+          confidence: result.confidence,
+          reasoning: result.reasoning
+        };
+      } else {
+        console.log("❌ LLM推理结果无效:", result);
+        return null;
+      }
+    } catch (error) {
+      console.error("❌ LLM推理失败:", error);
+      console.error("❌ 错误详情:", error instanceof Error ? error.message : String(error));
+      console.error("❌ 错误堆栈:", error instanceof Error ? error.stack : 'No stack trace');
+      return null;
+    }
+  }
+
+  /**
+   * 🎯 基于LLM推理结果创建步骤（纯数据驱动）
+   */
+  private createStepFromReasoning(reasoningResult: LLMReasoningResult, taskId: string, availableAgents: any[], context: any): TaskStep | null {
+    const { intent, entities } = reasoningResult;
+    
+    if (!intent || !entities) {
+      return null;
+    }
+
+    // 🎯 智能选择Agent - 使用动态Registry路由
+    console.log(`🎯 智能选择Agent用于意图: ${intent}`);
+    
+    // 根据意图类型动态选择所需能力
+    const requiredCapabilities = this.getRequiredCapabilities(intent);
+    console.log(`🎯 所需能力: ${requiredCapabilities.join(', ')}`);
+    
+    const agent = selectAgentForTask(intent, requiredCapabilities);
+    if (!agent) {
+      console.warn("⚠️ 未通过智能路由找到合适Agent，尝试回退...");
+      const fallbackAgent = findBestAgentByCapabilities(requiredCapabilities);
+      if (!fallbackAgent) {
+        console.error("❌ 没有任何Agent可处理该任务");
+        console.log("可用Agents:", availableAgents.map(a => `${a.id}(${a.capabilities.join(',')})`));
+        return null;
+      }
+      console.log(`✅ 回退选择Agent: ${fallbackAgent.id} (${fallbackAgent.name})`);
+      return this.createStepWithAgent(fallbackAgent, reasoningResult, taskId, context);
+    }
+    console.log(`✅ 动态选择Agent: ${agent.id} (${agent.name}) 用于意图: ${intent}`);
+    return this.createStepWithAgent(agent, reasoningResult, taskId, context);
+  }
+
+  /**
+   * 🎯 根据意图获取所需能力
+   */
+  private getRequiredCapabilities(intent: string): string[] {
+    if (intent.includes('add_') || intent.includes('add ')) {
+      return ['add', 'modify'];
+    }
+    if (intent.includes('edit_') || intent.includes('edit ')) {
+      return ['edit', 'modify'];
+    }
+    if (intent.includes('delete_') || intent.includes('remove_') || intent.includes('delete ') || intent.includes('remove ')) {
+      return ['remove', 'modify'];
+    }
+    if (intent.includes('optimize') || intent.includes('improve') || intent.includes('enhance')) {
+      return ['optimize', 'improve', 'enhance'];
+    }
+    if (intent.includes('analyze') || intent.includes('evaluate')) {
+      return ['analyze', 'evaluate'];
+    }
+    if (intent.includes('parse') || intent.includes('extract')) {
+      return ['parse', 'extract'];
+    }
+    // 默认能力
+    return ['add', 'modify'];
+  }
+
+  /**
+   * 🎯 使用指定Agent创建步骤
+   */
+  private createStepWithAgent(agent: any, reasoningResult: LLMReasoningResult, taskId: string, context: any): TaskStep | null {
+    const { intent, entities } = reasoningResult;
+    
+    // 根据意图类型确定实体类型
+    const entityType = this.determineEntityType(intent);
+    const mappedData = this.mapLLMEntitiesToAgentFormat(entities, entityType);
+    
+    console.log("🎯 实体类型:", entityType);
+    console.log("🎯 映射后的数据:", mappedData);
+    
+    return {
+      id: `step-${taskId}-1`,
+      agentId: agent.id,
+      action: intent,
+      input: {
+        action: this.getActionFromIntent(intent),
+        target: 'section',
+        entity: entityType,
+        data: mappedData,
+        sections: context.sections || []
+      },
+      dependencies: [],
+      priority: 1,
+      estimatedTime: 3000,
+      retryCount: 0,
+      maxRetries: 3
+    };
+  }
+
+  /**
+   * 🎯 根据意图确定实体类型
+   */
+  private determineEntityType(intent: string): string {
+    if (intent.includes('work') || intent.includes('experience') || intent.includes('job')) return 'work';
+    if (intent.includes('education') || intent.includes('degree') || intent.includes('university') || intent.includes('school')) return 'education';
+    if (intent.includes('skill') || intent.includes('technology') || intent.includes('programming')) return 'skill';
+    return 'general';
+  }
+
+  /**
+   * 🔄 根据意图获取操作类型
+   */
+  private getActionFromIntent(intent: string): string {
+    if (intent.startsWith('add_')) return 'add';
+    if (intent.startsWith('edit_')) return 'edit';
+    if (intent.startsWith('delete_')) return 'remove';
+    if (intent.includes('optimize') || intent.includes('improve')) return 'optimize';
+    return 'process';
+  }
+
+  /**
+   * 🔄 将LLM实体数据映射为Agent期望的格式
+   */
+  private mapLLMEntitiesToAgentFormat(entities: Record<string, any>, entityType: string): Record<string, any> {
+    const mappedData: Record<string, any> = {};
+
+    switch (entityType) {
+      case 'work':
+        mappedData.company = entities.company || entities.company_name || 'Company Name';
+        mappedData.position = entities.position || entities.job_title || 'Software Engineer';
+        mappedData.time = entities.period || entities.duration || entities.start_date || '2023 - 2025';
+        mappedData.location = entities.location || 'Remote';
+        mappedData.description = entities.description || 'Worked on various projects...';
+        break;
+
+      case 'education':
+        mappedData.institution = entities.institution || entities.school || 'University';
+        mappedData.degree = entities.degree || 'Bachelor\'s Degree';
+        mappedData.major = entities.major || entities.field_of_study || 'Computer Science';
+        mappedData.time = entities.period || entities.duration || entities.graduation_year || '2020-2024';
+        mappedData.location = entities.location || 'City, State';
+        break;
+
+      case 'skill':
+        mappedData.skills = entities.skills || entities.technologies || ['General Skills'];
+        mappedData.level = entities.level || 'Intermediate';
+        break;
+
+      default:
+        // 通用处理：直接使用实体数据
+        Object.assign(mappedData, entities);
+    }
+
+    return mappedData;
+  }
+
+  /**
+   * 🔍 分析用户意图（Fallback方法）
    */
   private analyzeUserIntent(userIntent: string, context: any): any[] {
     const steps: any[] = [];
     const intent = userIntent.toLowerCase();
 
-    // 简历解析相关
-    if (intent.includes('parse') || intent.includes('解析') || intent.includes('upload')) {
+    // 简单的关键词匹配作为fallback
+    if (intent.includes('work') || intent.includes('experience') || intent.includes('job')) {
       steps.push({
-        action: 'parse_resume',
-        input: context,
+        action: 'add_work',
+        input: { 
+          userIntent, 
+          context,
+          action: 'add',
+          target: 'section',
+          entity: 'work',
+          data: { company: 'Company', position: 'Position', time: '2023-2025' }
+        },
         priority: 1
       });
     }
 
-    // 内容优化相关
-    if (intent.includes('optimize') || intent.includes('优化') || intent.includes('improve')) {
-      steps.push({
-        action: 'optimize_content',
-        input: context,
-        priority: 2,
-        dependencies: ['parse_resume']
-      });
-    }
-
-    // 格式标准化相关
-    if (intent.includes('format') || intent.includes('格式') || intent.includes('standardize')) {
-      steps.push({
-        action: 'standardize_format',
-        input: context,
-        priority: 3,
-        dependencies: ['parse_resume']
-      });
-    }
-
-    // 质量检查相关
-    if (intent.includes('check') || intent.includes('检查') || intent.includes('validate')) {
-      steps.push({
-        action: 'quality_check',
-        input: context,
-        priority: 4,
-        dependencies: ['optimize_content', 'standardize_format']
-      });
-    }
-
-    // 批量编辑相关
-    if (intent.includes('bulk') || intent.includes('batch') || intent.includes('批量')) {
-      steps.push({
-        action: 'bulk_edit',
-        input: context,
-        priority: 2
-      });
-    }
-
-    // 教育添加相关
-    if (intent.includes('master') || intent.includes('degree') || intent.includes('education') || 
-        intent.includes('教育') || intent.includes('mit') || intent.includes('university') ||
-        intent.includes('college') || intent.includes('school')) {
+    if (intent.includes('education') || intent.includes('degree') || intent.includes('university')) {
       steps.push({
         action: 'add_education',
         input: { 
@@ -157,31 +350,13 @@ export class ExecutionPlanner {
           action: 'add',
           target: 'section',
           entity: 'education',
-          data: this.extractEducationData(userIntent)
+          data: { institution: 'University', degree: 'Degree', time: '2020-2024' }
         },
         priority: 1
       });
     }
 
-    // 单个编辑相关
-    if (intent.includes('edit') || intent.includes('修改') || intent.includes('update')) {
-      steps.push({
-        action: 'single_edit',
-        input: context,
-        priority: 1
-      });
-    }
-
-    // 删除操作相关
-    if (intent.includes('delete') || intent.includes('删除') || intent.includes('remove')) {
-      steps.push({
-        action: 'delete_item',
-        input: context,
-        priority: 1
-      });
-    }
-
-    // 如果没有匹配到特定意图，使用默认的推理引擎
+    // 默认fallback
     if (steps.length === 0) {
       steps.push({
         action: 'llm_reasoning',
@@ -193,94 +368,35 @@ export class ExecutionPlanner {
     return steps;
   }
 
-  /**
-   * 🎓 提取教育数据
-   */
-  private extractEducationData(userIntent: string): any {
-    const intent = userIntent.toLowerCase();
-    
-    // 提取机构信息
-    let institution = 'MIT';
-    if (intent.includes('mit')) {
-      institution = 'Massachusetts Institute of Technology';
-    } else if (intent.includes('harvard')) {
-      institution = 'Harvard University';
-    } else if (intent.includes('stanford')) {
-      institution = 'Stanford University';
-    }
-    
-    // 提取学位信息
-    let degree = 'M.S.';
-    if (intent.includes('master')) {
-      degree = 'M.S.';
-    } else if (intent.includes('bachelor') || intent.includes('bachelor')) {
-      degree = 'B.S.';
-    } else if (intent.includes('phd') || intent.includes('doctor')) {
-      degree = 'Ph.D.';
-    }
-    
-    // 提取专业信息
-    let major = 'Computer Science';
-    if (intent.includes('cs') || intent.includes('computer science')) {
-      major = 'Computer Science';
-    } else if (intent.includes('engineering')) {
-      major = 'Engineering';
-    }
-    
-    // 提取时间信息
-    let time = 'Sep. 2023 - Sep. 2025';
-    if (intent.includes('2023') && intent.includes('2025')) {
-      time = 'Sep. 2023 - Sep. 2025';
-    }
-    
-    // 提取地点信息
-    let location = 'Cambridge, MA';
-    if (intent.includes('mit')) {
-      location = 'Cambridge, MA';
-    }
-    
-    return {
-      institution,
-      degree,
-      major,
-      time,
-      location
-    };
-  }
 
   /**
-   * 🎯 为步骤选择最佳Agent
+   * 🎯 为步骤选择最佳Agent（智能版本）
    */
   private selectBestAgent(stepInfo: any, availableAgents: any[]): any {
     const { action } = stepInfo;
+    console.log(`🎯 智能选择Agent用于任务: ${action}`);
     
-    // 根据action类型选择Agent
-    const agentMap: Record<string, string[]> = {
-      'parse_resume': ['parseResumeAgent', 'aiParser'],
-      'optimize_content': ['contentOptimizer', 'llmReasoningEngine'],
-      'standardize_format': ['formatStandardizer', 'llmReasoningEngine'],
-      'quality_check': ['qualityChecker', 'llmReasoningEngine'],
-      'bulk_edit': ['resumeModifierAgent', 'llmReasoningEngine'],
-      'single_edit': ['resumeModifierAgent', 'llmReasoningEngine'],
-      'delete_item': ['resumeModifierAgent', 'llmReasoningEngine'],
-      'add_education': ['resumeModifierAgent'],
-      'add_work': ['resumeModifierAgent'],
-      'add_skill': ['resumeModifierAgent'],
-      'llm_reasoning': ['llmReasoningEngine']
-    };
-
-    const preferredAgents = agentMap[action] || ['llmReasoningEngine'];
-    
-    // 找到第一个可用的Agent
-    for (const agentId of preferredAgents) {
-      const agent = availableAgents.find(a => a.id === agentId);
-      if (agent && agent.status === 'available') {
-        return agent;
-      }
+    // 1️⃣ 优先智能选择
+    const agent = selectAgentForTask(action, ['add', 'edit', 'optimize']);
+    if (agent) {
+      console.log(`✅ 智能路由选择Agent: ${agent.id} (${agent.name})`);
+      return agent;
     }
 
-    // 如果没有找到特定Agent，使用默认的LLM推理引擎
-    return availableAgents.find(a => a.id === 'llmReasoningEngine') || availableAgents[0];
+    // 2️⃣ 如果失败，则按能力查找
+    const best = findBestAgentByCapabilities(['add', 'modify']);
+    if (best) {
+      console.log(`✅ 能力匹配选择Agent: ${best.id} (${best.name})`);
+      return best;
+    }
+
+    // 3️⃣ 最后兜底
+    console.warn("⚠️ 使用默认Agent兜底");
+    const fallbackAgent = availableAgents.find(a => a.status === 'available');
+    if (fallbackAgent) {
+      console.log(`✅ 兜底选择Agent: ${fallbackAgent.id} (${fallbackAgent.name})`);
+    }
+    return fallbackAgent || null;
   }
 
   /**
@@ -342,10 +458,10 @@ export class ExecutionPlanner {
     estimatedTime: number;
   } {
     return {
-      totalSteps: plan.steps.length,
-      parallelGroups: plan.parallelSteps.length,
-      sequentialSteps: plan.sequentialSteps.length,
-      estimatedTime: plan.totalEstimatedTime
+      totalSteps: plan.steps?.length || 0,
+      parallelGroups: plan.parallelSteps?.length || 0,
+      sequentialSteps: plan.sequentialSteps?.length || 0,
+      estimatedTime: plan.totalEstimatedTime || 0
     };
   }
 

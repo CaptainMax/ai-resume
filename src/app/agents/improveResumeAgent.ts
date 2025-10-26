@@ -1,6 +1,8 @@
 // src/app/agents/improveResumeAgent.ts
 // 🔧 简历改进Agent - 完全推理驱动的AI智能简历优化系统
 
+import { IAgent } from './base/IAgent';
+
 // Simple UUID generator without external dependencies
 const generateId = () => {
   return 'id-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
@@ -45,14 +47,22 @@ const sendFeedback = async (userId: string, reasoning: any, success: boolean, st
   }
 };
 
-export class ImproveResumeAgent {
-  async execute(entities: any, context: any): Promise<{ success: boolean; message: string; updatedResume?: any; suggestions?: string[] }> {
+export class ImproveResumeAgent implements IAgent {
+  id = 'improveResumeAgent';
+  name = 'Resume Improver';
+  description = '改进和优化简历内容';
+  status: 'available' | 'busy' | 'disabled' = 'available';
+  capabilities = ['improve', 'enhance', 'optimize', 'rewrite'];
+  dependencies: string[] = ['analyzeResumeAgent'];
+
+  async execute(task: any): Promise<{ success: boolean; message: string; updatedResume?: any; suggestions?: string[] }> {
+    const { entities = {}, context = {} } = task;
     logStage("intent-received", { entities, contextKeys: Object.keys(context) });
     
     try {
       // 🧠 深度克隆sections以避免状态污染
       const originalSections = context.sections || [];
-      const sections = structuredClone(originalSections);
+      const sections = JSON.parse(JSON.stringify(originalSections));
       
       // 🧠 提取LLM推理信息
       const reasoning = {
@@ -268,5 +278,18 @@ export class ImproveResumeAgent {
   private hasSkillLevel(content: string): boolean {
     const skillLevels = /expert|proficient|advanced|intermediate|beginner|skilled|experienced/i;
     return skillLevels.test(content);
+  }
+
+  /**
+   * 🎯 健康检查
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      // 简单的健康检查：验证基本功能
+      return true;
+    } catch (error) {
+      console.error('❌ ImproveResumeAgent 健康检查失败:', error);
+      return false;
+    }
   }
 }

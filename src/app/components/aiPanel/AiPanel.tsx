@@ -44,26 +44,16 @@ export default function AiPanel() {
   const { handleSend } = useAiChat();
   const { handleConfirmKeep, handleUndoLastAction } = useConfirmationHandler();
   const { recordOriginalData, sendFeedback, collectFeedback } = useFeedbackCollection();
-  const { executeIntentAction, analyzeIntent, collectLLMFeedback } = useAiOrchestrator();
+  const { executeIntentAction, collectLLMFeedback } = useAiOrchestrator();
 
   // 处理发送消息 - 使用推理驱动的意图分析
   const onSend = async (msg: string) => {
     try {
-      // 🧠 使用LLM进行真正的意图分析
-      const { intent, entities, confidence } = await analyzeIntent(msg);
-      
-      if (confidence > 0.7) {
-        // 高置信度：直接执行
-        console.log("🎯 高置信度意图检测:", { intent, entities, confidence });
-        await handleExecuteIntentAction(msg);
-      } else {
-        // 低置信度：显示意图分析对话框让用户确认
-        console.log("🤔 低置信度意图，需要用户确认:", { intent, entities, confidence });
-        setCurrentUserInput(msg);
-        setShowIntentAnalyzer(true);
-      }
+      // 🧠 直接使用推理管道执行
+      console.log("🎯 使用推理管道处理:", msg);
+      await handleExecuteIntentAction(msg);
     } catch (error) {
-      console.error('❌ 意图分析失败，回退到传统聊天:', error);
+      console.error('❌ 推理执行失败，回退到传统聊天:', error);
       // 回退到传统聊天模式
       handleSend(msg, sections, selectedId, selectedField, selectedPoint, messages, setMessages, setIsLoading, setShowUndoPrompt);
     }

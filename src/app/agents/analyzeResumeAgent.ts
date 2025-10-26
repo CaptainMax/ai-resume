@@ -1,6 +1,8 @@
 // src/app/agents/analyzeResumeAgent.ts
 // 📊 简历分析Agent - 深度分析简历内容和结构
 
+import { IAgent } from './base/IAgent';
+
 export interface ResumeAnalysisResult {
   success: boolean;
   analysis: {
@@ -143,7 +145,14 @@ export interface IndustryStandard {
   recommendations: string[];
 }
 
-export class AnalyzeResumeAgent {
+export class AnalyzeResumeAgent implements IAgent {
+  id = 'analyzeResumeAgent';
+  name = 'Resume Analyzer';
+  description = '分析简历内容和质量';
+  status: 'available' | 'busy' | 'disabled' = 'available';
+  capabilities = ['analyze', 'evaluate', 'score'];
+  dependencies: string[] = ['parseResumeAgent'];
+  
   private analysisRules: Map<string, any> = new Map();
   private industryStandards: Map<string, any> = new Map();
 
@@ -2200,5 +2209,26 @@ export class AnalyzeResumeAgent {
     }
     
     return Math.round(score);
+  }
+
+  /**
+   * 🎯 执行任务（IAgent 接口实现）
+   */
+  async execute(task: any): Promise<any> {
+    console.log('📊 AnalyzeResumeAgent 执行任务:', task);
+    return await this.analyzeResume(task.resumeData, task.options || {});
+  }
+
+  /**
+   * 🎯 健康检查
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      // 简单的健康检查：验证分析规则是否已初始化
+      return this.analysisRules.size > 0 && this.industryStandards.size > 0;
+    } catch (error) {
+      console.error('❌ AnalyzeResumeAgent 健康检查失败:', error);
+      return false;
+    }
   }
 }

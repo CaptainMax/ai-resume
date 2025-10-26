@@ -1,6 +1,8 @@
 // src/app/agents/resumeModifierAgent.ts
 // 🔧 简历修改Agent - 专门处理简历数据的实际修改
 
+import { IAgent } from './base/IAgent';
+
 export interface ResumeModifierRequest {
   action: string;
   target: string;
@@ -12,12 +14,18 @@ export interface ResumeModifierRequest {
 export interface ResumeModifierResponse {
   success: boolean;
   data?: any[];
+  sections?: any[];
   error?: string;
   message?: string;
 }
 
-export class ResumeModifierAgent {
-  private name: string = 'ResumeModifierAgent';
+export class ResumeModifierAgent implements IAgent {
+  id = 'resumeModifierAgent';
+  name = 'Resume Modifier';
+  description = '负责修改、添加和删除简历内容';
+  status: 'available' | 'busy' | 'disabled' = 'available';
+  capabilities = ['add', 'edit', 'remove', 'modify'];
+  dependencies: string[] = [];
   private version: string = '1.0.0';
 
   /**
@@ -92,7 +100,7 @@ export class ResumeModifierAgent {
 
       return {
         success: true,
-        data: sections,
+        sections: sections,
         message: `成功添加教育经历: ${data.institution}`
       };
     }
@@ -118,8 +126,32 @@ export class ResumeModifierAgent {
 
       return {
         success: true,
-        data: sections,
+        sections: sections,
         message: `成功添加工作经历: ${data.company}`
+      };
+    }
+
+    if (target === 'section' && entity === 'skill') {
+      // 添加技能
+      const skillSection = this.findOrCreateSection(sections, 'Skills');
+      
+      const skills = data.skills || data.technologies || ['General Skills'];
+      const skillPoints = skills.map((skill: string) => `${skill}: ${data.level || 'Intermediate'}`);
+      
+      const newField = {
+        id: `field-${Date.now()}`,
+        name: 'Technical Skills',
+        value: 'Technical Skills',
+        points: skillPoints
+      };
+
+      skillSection.fields = skillSection.fields || [];
+      skillSection.fields.push(newField);
+
+      return {
+        success: true,
+        sections: sections,
+        message: `成功添加技能: ${skills.join(', ')}`
       };
     }
 
@@ -187,7 +219,20 @@ export class ResumeModifierAgent {
    * @returns 健康状态
    */
   async healthCheck(): Promise<boolean> {
-    return true;
+    try {
+      // 简单的健康检查：验证基本功能
+      const testResult = await this.execute({
+        action: 'test',
+        target: 'test',
+        entity: 'test',
+        data: {},
+        sections: []
+      });
+      return testResult.success !== false;
+    } catch (error) {
+      console.error('❌ ResumeModifierAgent 健康检查失败:', error);
+      return false;
+    }
   }
 
   /**

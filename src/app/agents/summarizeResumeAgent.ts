@@ -1,6 +1,8 @@
 // src/app/agents/summarizeResumeAgent.ts
 // 📝 简历总结Agent - 专门处理简历摘要生成任务
 
+import { IAgent } from './base/IAgent';
+
 export interface SummarizeResumeRequest {
   resumeData: any[];
   options?: {
@@ -16,8 +18,13 @@ export interface SummarizeResumeResponse {
   error?: string;
 }
 
-export class SummarizeResumeAgent {
-  private name: string = 'SummarizeResumeAgent';
+export class SummarizeResumeAgent implements IAgent {
+  id = 'summarizeResumeAgent';
+  name = 'Resume Summarizer';
+  description = '生成简历摘要和总结';
+  status: 'available' | 'busy' | 'disabled' = 'available';
+  capabilities = ['summarize', 'extract', 'format'];
+  dependencies: string[] = ['parseResumeAgent'];
   private version: string = '1.0.0';
 
   /**

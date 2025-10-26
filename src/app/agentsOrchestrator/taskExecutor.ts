@@ -2,6 +2,7 @@
 // 🚀 任务执行器 - 执行具体的任务计划
 
 import { ExecutionPlan, TaskStep } from './executionPlanner';
+import { getAgentById } from '../agents/agentRegistry';
 
 export interface ExecutionResult {
   stepId: string;
@@ -25,13 +26,11 @@ export interface TaskExecutionStatus {
 }
 
 export class TaskExecutor {
-  private agentRegistry: any;
   private activeExecutions: Map<string, TaskExecutionStatus> = new Map();
   private executionHistory: ExecutionResult[] = [];
 
-  constructor(agentRegistry: any) {
-    this.agentRegistry = agentRegistry;
-    console.log("🚀 TaskExecutor initialized");
+  constructor() {
+    console.log("🚀 TaskExecutor initialized with dynamic agent registry");
   }
 
   /**
@@ -154,7 +153,7 @@ export class TaskExecutor {
       console.log(`🎯 执行步骤: ${step.id} (Agent: ${step.agentId})`);
 
       // 获取Agent
-      const agent = this.agentRegistry.getAgent(step.agentId);
+      const agent = getAgentById(step.agentId);
       if (!agent) {
         throw new Error(`Agent not found: ${step.agentId}`);
       }
@@ -303,7 +302,7 @@ export class TaskExecutor {
     console.log('🔧 ResumeModifierAgent参数:', parameters);
     
     // 直接调用Agent实例
-    const agentInstance = this.agentRegistry.getAgentInstance('resumeModifierAgent');
+    const agentInstance = getAgentById('resumeModifierAgent');
     if (!agentInstance) {
       throw new Error('ResumeModifierAgent实例不存在');
     }
