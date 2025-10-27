@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import DownloadButton from "./DownloadButton";
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const isAiEditPage = pathname === "/ai-edit";
+
   return (
     <nav className="w-full flex items-center justify-between px-8 py-4 bg-white shadow-md">
       {/* 左边 - Logo */}
@@ -23,8 +28,10 @@ export default function Navbar() {
         </Link>
       </div>
 
-      {/* 右边 - 预留区域 */}
-      <div className="text-gray-500">{/* Download 按钮以后加这里 */}</div>
+      {/* 右边 - 下载按钮（仅在ai-edit页面显示） */}
+      <div className="text-gray-500">
+        {isAiEditPage && <DownloadButton />}
+      </div>
     </nav>
   );
 }
