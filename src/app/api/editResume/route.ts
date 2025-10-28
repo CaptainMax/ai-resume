@@ -227,6 +227,14 @@ export async function POST(req: Request) {
           }
           break;
 
+        case "remove_section":
+          // 删除整个section
+          if (payload.sectionId) {
+            updatedResume.sections = updatedResume.sections?.filter((s: any) => s.id !== payload.sectionId);
+            console.log("✅ 删除section:", payload.sectionId);
+          }
+          break;
+
         default:
           console.log("⚠️ 未知动作类型:", type);
       }

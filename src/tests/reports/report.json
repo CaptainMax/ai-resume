@@ -1,0 +1,96 @@
+{
+  "timestamp": "2025-10-27T04:37:10.179Z",
+  "summary": {
+    "totalTests": 6,
+    "versions": [
+      {
+        "version": "v1",
+        "testCount": 3,
+        "successCount": 3,
+        "avgElapsedMs": 1617,
+        "avgTokens": 503,
+        "avgCost": 0.0024,
+        "avgPassRate": 95,
+        "successRate": 100
+      },
+      {
+        "version": "v2",
+        "testCount": 3,
+        "successCount": 3,
+        "avgElapsedMs": 1800,
+        "avgTokens": 567,
+        "avgCost": 0.0028,
+        "avgPassRate": 97.67,
+        "successRate": 100
+      }
+    ]
+  },
+  "results": [
+    {
+      "version": "v1",
+      "testId": "rewrite_basic",
+      "testInput": "rewrite: I improved sales by 30%",
+      "elapsedMs": 1850,
+      "totalTokens": 510,
+      "cost": 0.0025,
+      "response": "Enhanced sales performance by 30% through strategic optimization initiatives.",
+      "success": true,
+      "passRate": 95
+    },
+    {
+      "version": "v2",
+      "testId": "rewrite_basic",
+      "testInput": "rewrite: I improved sales by 30%",
+      "elapsedMs": 2100,
+      "totalTokens": 620,
+      "cost": 0.0031,
+      "response": "Dramatically improved sales performance by 30% through data-driven optimization strategies and customer engagement initiatives.",
+      "success": true,
+      "passRate": 98
+    },
+    {
+      "version": "v1",
+      "testId": "education_add",
+      "testInput": "add education entry: MIT, 2019-2023, M.S. Computer Science",
+      "elapsedMs": 1400,
+      "totalTokens": 480,
+      "cost": 0.0022,
+      "response": "{\"action\": {\"type\": \"add_field\", \"data\": {\"sectionId\": \"section-6\", \"fieldName\": \"MIT\", \"points\": [\"Date: 2019-2023\", \"Degree: M.S. Computer Science\"]}}}",
+      "success": true,
+      "passRate": 100
+    },
+    {
+      "version": "v2",
+      "testId": "education_add",
+      "testInput": "add education entry: MIT, 2019-2023, M.S. Computer Science",
+      "elapsedMs": 1500,
+      "totalTokens": 500,
+      "cost": 0.0024,
+      "response": "{\"action\": {\"type\": \"add_field\", \"data\": {\"sectionId\": \"section-6\", \"fieldName\": \"Massachusetts Institute of Technology\", \"points\": [\"Location: Cambridge, MA\", \"Date: 2019-2023\", \"Degree: M.S. Computer Science\", \"GPA: 3.8/4.0\"]}}}",
+      "success": true,
+      "passRate": 100
+    },
+    {
+      "version": "v1",
+      "testId": "work_add",
+      "testInput": "add work experience at Google as Senior Software Engineer from 2020 to 2023",
+      "elapsedMs": 1600,
+      "totalTokens": 520,
+      "cost": 0.0026,
+      "response": "{\"action\": {\"type\": \"add_field\", \"data\": {\"sectionId\": \"section-1\", \"fieldName\": \"Google\", \"points\": [\"Position: Senior Software Engineer\", \"Date: 2020-2023\"]}}}",
+      "success": true,
+      "passRate": 90
+    },
+    {
+      "version": "v2",
+      "testId": "work_add",
+      "testInput": "add work experience at Google as Senior Software Engineer from 2020 to 2023",
+      "elapsedMs": 1800,
+      "totalTokens": 580,
+      "cost": 0.0029,
+      "response": "{\"action\": {\"type\": \"add_field\", \"data\": {\"sectionId\": \"section-1\", \"fieldName\": \"Google\", \"points\": [\"Position: Senior Software Engineer\", \"Date: 2020-2023\", \"Description: Led development of scalable cloud infrastructure solutions\", \"Responsibility: Architected microservices handling 1M+ daily requests\"]}}}",
+      "success": true,
+      "passRate": 95
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "modules": [
+    {
+      "name": "base",
+      "file": "@/prompts/aichat/base/${version}/rule.ts",
+      "examples": "@/prompts/aichat/base/${version}/examples.ts",
+      "always": true,
+      "version": "v1",
+      "description": "基础身份定义和通用规则"
+    },
+    {
+      "name": "rewrite",
+      "file": "@/prompts/aichat/rewrite/${version}/rule.ts",
+      "examples": "@/prompts/aichat/rewrite/${version}/examples.ts",
+      "trigger": [
+        "rewrite",
+        "re-write",
+        "re write",
+        "improve",
+        "optimize",
+        "enhance",
+        "polish",
+        "refine"
+      ],
+      "version": "v2",
+      "description": "改写逻辑模块"
+    },
+    {
+      "name": "delete",
+      "file": "@/prompts/aichat/delete/${version}/rule.ts",
+      "examples": "@/prompts/aichat/delete/${version}/examples.ts",
+      "trigger": [
+        "我确认删除这段",
+        "确认删除",
+        "confirm delete",
+        "yes delete",
+        "delete confirmed",
+        "delete",
+        "remove"
+      ],
+      "version": "v1",
+      "description": "删除确认模块"
+    },
+    {
+      "name": "education",
+      "file": "@/prompts/aichat/education/${version}/rule.ts",
+      "examples": "@/prompts/aichat/education/${version}/examples.ts",
+      "always": true,
+      "version": "v1",
+      "description": "教育规则模块"
+    },
+    {
+      "name": "work",
+      "file": "@/prompts/aichat/work/${version}/rule.ts",
+      "examples": "@/prompts/aichat/work/${version}/examples.ts",
+      "always": true,
+      "version": "v1",
+      "description": "工作规则模块"
+    },
+    {
+      "name": "context",
+      "file": "@/prompts/shared/contextWrapper.ts",
+      "always": false,
+      "version": "v1",
+      "description": "上下文包装模块"
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-10-27T04:26:43.491Z",
+    "description": "AI Resume Prompt Module Registry with Version Control"
+  }
+}

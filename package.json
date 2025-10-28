@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prompt:test": "tsx src/tests/runPromptTests.ts",
+    "prompt:report": "curl http://localhost:3000/api/prompt-report",
+    "prompt:report-md": "curl http://localhost:3000/api/prompt-report?format=markdown"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -34,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

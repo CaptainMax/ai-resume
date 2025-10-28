@@ -3,6 +3,7 @@ import { openai } from "../openai-client";
 import JSON5 from "json5";
 import { LearningSystem } from "../../agents/learningSystem";
 import { ConfidenceEvolution } from "../../agents/confidenceEvolution";
+import { buildParserPrompt } from "@/prompts/parser";
 
 // 合并Work Experience sections的函数
 function mergeWorkExperienceSections(sections: any[]): any[] {
@@ -59,161 +60,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: "Missing resume text" }, { status: 400 });
   }
 
-  // 🚀 AI-First 解析：直接使用ChatGPT进行智能解析
-  console.log("🤖 使用AI进行智能解析...");
+  // 🚀 AI-First 解析：使用模块化Prompt系统
+  console.log("🤖 使用模块化AI进行智能解析...");
   
-  // 初始化学习系统和置信度进化
-  const learningSystem = new LearningSystem();
-  const confidenceEvolution = new ConfidenceEvolution();
+  // 初始化学习系统和置信度进化（简化版以提升性能）
+  // const learningSystem = new LearningSystem();
+  // const confidenceEvolution = new ConfidenceEvolution();
   
-  const systemPrompt = `
-    你是一名专业的简历解析专家，具备深度语义理解能力。请将用户提供的简历文本转换为结构化 JSON。
-
-    🧠 核心能力要求：
-    - 深度语义理解：理解每个内容的真实含义和上下文
-    - 智能分类：准确识别内容应该归属的section
-    - 结构分析：理解简历的整体层次结构
-    - 行业感知：考虑不同行业的表达习惯
-
-    📋 解析要求：
-    1. 必须输出一个JSON数组，以 [ 开始，以 ] 结束
-    2. 只能输出纯 JSON，不要任何多余的文字、Markdown 格式、注释或代码块
-    3. 确保 JSON 格式完全正确，所有括号、引号、逗号都要匹配
-    4. 所有字符串必须用双引号包围
-    5. 数组和对象必须正确闭合
-    6. 不要有尾随逗号
-
-    IMPORTANT PARSING RULES:
-    - 仔细阅读整个简历，不要遗漏任何信息
-    - 必须提取所有部分：Header, Work Experience, Education, Technical Skills, Projects, Certifications等
-    - 对于工作经历，每个工作都要完整提取，包括公司名称、职位、时间、地点、描述、职责等
-    - 公司名称要放在field的value字段中，不要放在points中
-    - 对于每个职责点，都要单独作为一个point
-    - 不要合并或简化内容，保持原始信息的完整性
-    - 如果有多段工作经历，每段都要单独处理
-    - 确保提取所有技能、教育背景、项目经验等
-    - 工作经历格式：Company Name的value字段放公司全名，points放其他详细信息
-    - 确保公司名称完整提取，不要截断或遗漏
-    - 每个工作经历都要有独立的Company Name field，value字段包含完整公司名称
-    - 重要：Company Name字段必须有value属性，包含完整的公司名称
-    
-    🎯 工作经历解析特别规则：
-    - 当遇到 "Apple (Apple Online Store - Onsite-Vendor)" 这种格式时：
-      * Company Name的value应该是 "Apple"
-      * 职位信息应该作为单独的point，格式为 "Position: Apple Online Store - Onsite-Vendor"
-    - 当遇到 "Apple Inc." 这种格式时：
-      * Company Name的value应该是 "Apple Inc."
-    - 当遇到 "Apple" 这种格式时：
-      * Company Name的value应该是 "Apple"
-    - 职位信息（如Software Engineer）应该作为 "Position: [职位名称]" 的point
-    - 时间信息应该作为 "Date: [时间范围]" 的point
-    - 描述信息应该作为 "Description: [描述内容]" 的point
-    - 职责信息应该作为 "Responsibility: [职责内容]" 的point
-    
-    ⚠️ 重要：Company Name和University Name字段的value属性是必须的，不能为空或null！
-    
-    🎯 工作经历解析规则：
-    - 如果公司名称是 "Apple (Apple Online Store - Onsite-Vendor)"，那么value应该是 "Apple"
-    - 如果公司名称是 "Apple Inc."，那么value应该是 "Apple Inc."
-    - 如果公司名称是 "Apple"，那么value应该是 "Apple"
-    - 公司名称必须从原始文本中准确提取，不能遗漏或截断
-    
-    🎯 教育背景解析规则：
-    - 如果大学名称是 "The University of Texas at Arlington"，那么University Name的value应该是 "The University of Texas at Arlington"
-    - 如果大学名称是 "MIT"，那么University Name的value应该是 "MIT"
-    - 如果大学名称是 "Stanford University"，那么University Name的value应该是 "Stanford University"
-    - 大学名称必须从原始文本中准确提取，不能遗漏或截断
-    - University Name字段的value属性是必须的，不能为空或null！
-
-    REQUIRED JSON FORMAT (MUST BE AN ARRAY):
-    [
-      {
-        "section": "Header",
-        "fields": [
-          { "name": "Email", "points": ["max.jian.ma@gmail.com"] },
-          { "name": "Phone No", "points": ["214-796-0666"] },
-          { "name": "Web", "points": ["http://maxonboard.com"] }
-        ]
-      },
-      {
-        "section": "Work Experience",
-        "fields": [
-          { 
-            "name": "Company Name", 
-            "value": "eBay",
-            "points": [
-              "Location: Austin, TX",
-              "Date: Aug 2024 to Current",
-              "Project: eBay Migration Project",
-              "Description: Worked on eBay's API migration initiative...",
-              "Responsibility: Migrated eBay's legacy APIs to new RESTful APIs",
-              "Responsibility: Developed, tested, and deployed new API integrations",
-              "Responsibility: Optimized API performance and improved data exchange efficiency"
-            ]
-          }
-        ]
-      },
-      {
-        "section": "Work Experience",
-        "fields": [
-          { 
-            "name": "Company Name", 
-            "value": "Apple",
-            "points": [
-              "Position: Apple Online Store - Onsite-Vendor",
-              "Date: Mar. 2022 - Feb. 2025",
-              "Description: Apple's online store is a premier destination for purchasing a wide range of Apple products and accessories. It provides easy navigation, detailed product info, and secure shopping. Customers enjoy fast, free shipping, AppleCare support, and a user-friendly interface for a seamless, convenient shopping experience.",
-              "Responsibility: Participated in all phases of the software development lifecycle, including analysis, design, development, integration, and testing.",
-              "Responsibility: Revamped the interaction service by incorporating a thread pool, significantly improving its performance. This enhancement increased upload speeds by 90%, resulting in faster data transfers and a more efficient system overall."
-            ]
-          }
-        ]
-      },
-      {
-        "section": "Education",
-        "fields": [
-          { 
-            "name": "University Name", 
-            "value": "The University of Texas at Arlington",
-            "points": [
-              "Location: Arlington, TX",
-              "Date: Sep. 2017 - Dec. 2020",
-              "Degree: B.S. Computer Science"
-            ]
-          }
-        ]
-      },
-      {
-        "section": "Technical Skills",
-        "fields": [
-          { "name": "Skills", "points": ["Java", "Spring Boot", "AWS", "Kubernetes", "Docker"] }
-        ]
-      },
-      {
-        "section": "Projects",
-        "fields": [
-          { "name": "Project Name", "points": ["Project Description", "Technologies Used", "Key Achievements"] }
-        ]
-      }
-    ]
-
-    IMPORTANT: 
-    - 输出必须以 [ 开始，以 ] 结束
-    - 每个工作经历都要完整提取所有信息
-    - 每个职责点都要单独列出
-    - 不要遗漏任何内容
-    请直接输出 JSON 数组，不要添加任何说明文字。
-    `;
+  // 🧱 使用模块化Prompt构建器（不包含Few-shot示例以提升性能）
+  const systemPrompt = buildParserPrompt({ includeExamples: false });
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini", // 使用更快的模型
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: resumeText },
       ],
       temperature: 0.1,
-      max_tokens: 9000,
+      max_tokens: 6000, // 减少token数量
     });
 
     const response = completion.choices[0].message.content || "";
@@ -285,9 +150,9 @@ export async function POST(req: Request) {
     }
 
     if (result) {
-      // 🧠 应用学习系统优化
-      console.log("🔧 应用学习系统优化...");
-      const optimizedResult = await learningSystem.applyLearning(result);
+      // 🧠 应用学习系统优化（暂时禁用以提升性能）
+      console.log("🔧 跳过学习系统优化以提升性能...");
+      const optimizedResult = result; // 直接使用原始结果
       
       // 格式统一函数（数组 or 对象 → 标准结构）
       function normalizeToSectionArray(data: any) {
@@ -395,22 +260,17 @@ export async function POST(req: Request) {
       const mergedData = mergeWorkExperienceSections(normalizedData);
       console.log("🔄 合并Work Experience后:", mergedData.length, "个sections");
       
-      // 🎯 计算动态置信度
-      const userId = "user-123"; // TODO: 从实际用户ID获取
-      const baseConfidence = 0.7;
-      const userAccuracy = 0.8; // TODO: 从用户历史数据获取
-      const feedbackQuality = 0.7; // TODO: 从反馈质量分析获取
-      const patternMatch = 0.8; // TODO: 从模式匹配分析获取
+      // 🎯 计算动态置信度（简化版以提升性能）
+      const confidenceMetrics = {
+        baseConfidence: 0.7,
+        userAccuracy: 0.8,
+        feedbackQuality: 0.7,
+        patternMatch: 0.8,
+        historicalPerformance: 0,
+        finalConfidence: 0.7
+      };
       
-      const confidenceMetrics = confidenceEvolution.calculateDynamicConfidence(
-        userId,
-        baseConfidence,
-        userAccuracy,
-        feedbackQuality,
-        patternMatch
-      );
-      
-      console.log("🎯 置信度计算完成:", confidenceMetrics);
+      console.log("🎯 使用简化置信度计算:", confidenceMetrics);
       
       return NextResponse.json({ 
         success: true, 

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "rewrite_basic",
+    "input": "rewrite: I improved sales by 30%",
+    "expectedType": "text",
+    "description": "基础改写测试",
+    "category": "rewrite"
+  },
+  {
+    "id": "rewrite_professional",
+    "input": "improve this content: I worked on mobile app development",
+    "expectedType": "text",
+    "description": "专业改写测试",
+    "category": "rewrite"
+  },
+  {
+    "id": "education_add",
+    "input": "add education entry: MIT, 2019-2023, M.S. Computer Science",
+    "expectedType": "json",
+    "description": "添加教育经历测试",
+    "category": "education"
+  },
+  {
+    "id": "education_add_detailed",
+    "input": "I got my PhD from Stanford University in 2023 with a focus on AI",
+    "expectedType": "json",
+    "description": "详细教育经历测试",
+    "category": "education"
+  },
+  {
+    "id": "work_add",
+    "input": "add work experience at Google as Senior Software Engineer from 2020 to 2023",
+    "expectedType": "json",
+    "description": "添加工作经历测试",
+    "category": "work"
+  },
+  {
+    "id": "work_add_detailed",
+    "input": "Add my internship at Apple as iOS Developer Intern from Summer 2022",
+    "expectedType": "json",
+    "description": "详细工作经历测试",
+    "category": "work"
+  },
+  {
+    "id": "delete_confirm",
+    "input": "我确认删除这段经历",
+    "expectedType": "json",
+    "description": "删除确认测试",
+    "category": "delete"
+  },
+  {
+    "id": "delete_confirm_en",
+    "input": "confirm delete this work experience",
+    "expectedType": "json",
+    "description": "英文删除确认测试",
+    "category": "delete"
+  },
+  {
+    "id": "optimize_content",
+    "input": "optimize my resume content to be more professional",
+    "expectedType": "text",
+    "description": "内容优化测试",
+    "category": "rewrite"
+  },
+  {
+    "id": "enhance_description",
+    "input": "enhance this description: Developed web applications",
+    "expectedType": "text",
+    "description": "描述增强测试",
+    "category": "rewrite"
+  }
+]

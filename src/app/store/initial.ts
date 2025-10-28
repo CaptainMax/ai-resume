@@ -86,4 +86,95 @@ export const initialSections: ResumeSection[] = [
       { id: "f16", name: "Years", value: "2017 – 2020" },
     ],
   },
+  {
+    id: "certifications",
+    title: "Certifications/Awards",
+    fields: [
+      {
+        id: "f17",
+        name: "AWS Certified Solutions Architect",
+        points: [
+          { id: "p10", content: "Issued: 2023" },
+          { id: "p11", content: "Credential ID: AWS-CSA-123456" },
+        ],
+      },
+      {
+        id: "f18",
+        name: "Google Cloud Professional Developer",
+        points: [
+          { id: "p12", content: "Issued: 2022" },
+          { id: "p13", content: "Valid until: 2025" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "languages",
+    title: "Languages",
+    fields: [
+      {
+        id: "f19",
+        name: "English",
+        value: "Native",
+      },
+      {
+        id: "f20",
+        name: "Chinese (Mandarin)",
+        value: "Native",
+      },
+      {
+        id: "f21",
+        name: "Spanish",
+        value: "Intermediate",
+      },
+    ],
+  },
+  {
+    id: "volunteer",
+    title: "Volunteer/Leadership",
+    fields: [
+      {
+        id: "f22",
+        name: "Tech for Good Volunteer",
+        points: [
+          { id: "p14", content: "Organization: Code for America" },
+          { id: "p15", content: "Duration: 2022 - Present" },
+          { id: "p16", content: "Role: Lead Developer for civic tech projects" },
+        ],
+      },
+      {
+        id: "f23",
+        name: "University Coding Club President",
+        points: [
+          { id: "p17", content: "Institution: University of Texas at Arlington" },
+          { id: "p18", content: "Duration: 2018 - 2020" },
+          { id: "p19", content: "Led 50+ members in coding competitions and workshops" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "portfolio",
+    title: "Portfolio/Publications",
+    fields: [
+      {
+        id: "f24",
+        name: "GitHub Portfolio",
+        value: "https://github.com/jianma",
+      },
+      {
+        id: "f25",
+        name: "Personal Website",
+        value: "https://maxonboard.com",
+      },
+      {
+        id: "f26",
+        name: "Publications",
+        points: [
+          { id: "p20", content: "Machine Learning in Resume Optimization, IEEE Conference 2023" },
+          { id: "p21", content: "Scalable Backend Architecture Patterns, Medium Article 2022" },
+        ],
+      },
+    ],
+  },
 ];
